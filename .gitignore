@@ -4,6 +4,7 @@ __pycache__
 
 FGNET
 CACD2000
+cacd_split
 *.mat
 *.csv
 *.zip
