@@ -6,8 +6,6 @@ import torch.nn as nn
 import torchvision
 import torchvision.transforms as transforms
 import torch.optim as optim
-import torch.nn.functional as F
-from torchvision.models import vgg16
 
 
 from fgnet_loader import FGNETDataset
@@ -27,21 +25,25 @@ class DiffusionParams(NamedTuple):
     steps: int=200
     beta_start: float=0.0001
     beta_end: float=0.02
+    device: torch.device=torch.device("cuda")
 
 
-class Diffusion(nn.Module):
-    def __init__(self, steps, beta_start=0.0001, beta_end=0.02):
+class Diffusion:
+    def __init__(self, steps, beta_start=0.0001, beta_end=0.02, device=torch.device("cuda")):
         self.betas = diffusion_linear_beta_schedule(steps, beta_start, beta_end)
+        self.device = device
 
     def forward_diff(self, x_0, t):
         noise = torch.randn_like(x_0)
         alphas = 1 - self.betas
-        alphas = torch.cumprod(alphas, dim=0)[t]
+        alphas = torch.cumprod(alphas, dim=0).to(self.device)
+        alphas = alphas[t]
         return torch.sqrt(alphas) * x_0 + torch.sqrt((1 - alphas)) * noise
 
     def reverse_diff(self, x_t, t):
         alphas = 1 - self.betas
-        alphas = torch.cumprod(alphas, dim=0)[t]
+        alphas = torch.cumprod(alphas, dim=0).to(self.device)
+        alphas = alphas[t]
         return x_t / torch.sqrt(alphas)
 
 
@@ -134,10 +136,10 @@ def train_model():
     trainloader = DataLoader(train, batch_size=batch_size, shuffle=True, drop_last=True)
     testloader = DataLoader(test, batch_size=batch_size, shuffle=False, drop_last=False)
 
-    vit_params = VitParams(img_size=256, patch_size=16, in_chans=3, emb_dim=768, depth=12, num_heads=12, mlp_ratio=4).to(device)
+    vit_params = VitParams(img_size=256, patch_size=16, in_chans=3, emb_dim=768, num_layers=12, num_heads=12, mlp_ratio=4)
+    diff_params = DiffusionParams(device=device)
+    model = VITDiffusion(vit_params, diff_params).to(device)
     print(model)
-    diff_params = DiffusionParams()
-    model = VITDiffusion(vit_params, diff_params)
     optimizer = optim.Adam(model.parameters(), lr=0.001)
     criterion = nn.MSELoss()
 
