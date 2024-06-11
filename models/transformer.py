@@ -38,6 +38,8 @@ class Diffusion:
         alphas = 1 - self.betas
         alphas = torch.cumprod(alphas, dim=0).to(self.device)
         alphas = alphas[t]
+        print(f"alphas: {alphas.to(torch.device("cpu")).shape}")
+        print(f"x_0: {x_0.to(torch.device("cpu")).shape}")
         return torch.sqrt(alphas) * x_0 + torch.sqrt((1 - alphas)) * noise
 
     def reverse_diff(self, x_t, t):
@@ -60,7 +62,7 @@ class Embedding(nn.Module):
 class Reconstruct(nn.Module):
     def __init__(self, patch_size, emb_dim, out_chans):
         super().__init__()
-        self.rec = nn.ConvTranspose2d(in_channels=emb_dim, out_channels=out_chans, kernel_size=patch_size, stride=patch_size),
+        self.rec = nn.ConvTranspose2d(in_channels=emb_dim, out_channels=out_chans, kernel_size=patch_size, stride=patch_size)
         self.relu = nn.LeakyReLU()
 
     def forward(self, x):
@@ -89,20 +91,20 @@ class VITDiffusion(nn.Module):
 
     def forward(self, x, age, t):
         x = self.patch_embedding(x)
-        x = self.encoder(x)
         x = x + self.pos_embedding
 
         age = age.unsqueeze(-1).float()
         age_embedding = self.age_embedding(age).unsqueeze(1)
         x = x + age_embedding
+        encoded = self.encoder(x)
+        tgt = torch.zeros_like(encoded)
+        # x = self.diffusion.forward_diff(x, t)
+        # x = self.diffusion.reverse_diff(x ,t)
 
-        x = self.diffusion.forward_diff(x, t)
-        x = self.diffusion.reverse_diff(x ,t)
-
-        x = self.decoder(x)
-        x = x.permute(0, 2, 1).view(-1, x.size(-1), self.vit_params.img_size // self.vit_params.patch_size, self.vit_params.img_size // self.vit_params.patch_size)
-        x = self.reconstruction(x)
-        return x
+        decoded = self.decoder(tgt, x)
+        decoded = x.permute(0, 2, 1).view(-1, x.size(-1), self.vit_params.img_size // self.vit_params.patch_size, self.vit_params.img_size // self.vit_params.patch_size)
+        output = self.reconstruction(decoded)
+        return output
 
 
 def diffusion_linear_beta_schedule(steps, start=0.0001, end=0.02):
@@ -130,7 +132,7 @@ def train_model():
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
         ]
     )
-    batch_size = 64
+    batch_size = 16
     dataset = FGNETDataset(images_path, transform=transform)
     train, test = torch.utils.data.random_split(dataset, [0.8, 0.2])
     trainloader = DataLoader(train, batch_size=batch_size, shuffle=True, drop_last=True)
@@ -152,7 +154,7 @@ def train_model():
             image = image.to(device) # timestep 0 for now, implement properly later
             age = age.to(device)
             outputs = model(image, age, timesteps)
-            loss = criterion(outputs, image, timesteps)
+            loss = criterion(outputs, image)
             loss.backward()
             optimizer.step()
 
