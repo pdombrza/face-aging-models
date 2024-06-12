@@ -1,6 +1,4 @@
-import torch
 import torch.nn as nn
-
 
 class ResidualBlock(nn.Module):
     def __init__(self, in_channels, padding_type='', conv_bias=True):
@@ -65,7 +63,7 @@ class Generator(nn.Module):
                 nn.ReLU(inplace=True)
             ]
             num_channels *= 2
-        # 9 resnet blocks as specified in that one article on face aging
+        # 9 resnet blocks
         self.gen += [ResidualBlock(num_channels) for _ in range(num_residual_blocks)]
         # Upsampling
         for _ in range(2):
@@ -76,7 +74,7 @@ class Generator(nn.Module):
             ]
             num_channels //= 2
         self.gen += [
-            nn.ReflectionPad2d(3),
+            # nn.ReflectionPad2d(3), # this causes shape mismatch (makes sense)
             nn.Conv2d(64, 3, kernel_size=7, stride=1, padding=3),
             nn.Tanh()
         ]
