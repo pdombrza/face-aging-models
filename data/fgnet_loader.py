@@ -31,6 +31,10 @@ class FGNETDataset(Dataset):
         return person_id, image, person_age, person_gender
 
 
+class FGNETGANDataset(Dataset):
+    ...
+
+
 def main():
     images_path = "FGNET/FGNET/individuals"
     transform = transforms.Compose(
