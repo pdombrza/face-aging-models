@@ -1,7 +1,5 @@
 import torch
-import torchvision
 import torch.nn as nn
-import torch.nn.functional as F
 
 
 class ResidualBlock(nn.Module):
@@ -23,7 +21,7 @@ class ResidualBlock(nn.Module):
 
 
 class Discriminator(nn.Module):
-    def __init__(self, input_nc, n_layers=3):
+    def __init__(self, input_nc=3, n_layers=3):
         super(Discriminator, self).__init__()
         # as in the original implementation
         self.discriminator = nn.Sequential(
@@ -68,7 +66,7 @@ class Generator(nn.Module):
             ]
             num_channels *= 2
         # 9 resnet blocks as specified in that one article on face aging
-        self.gen += [ResidualBlock() for _ in range(num_residual_blocks)]
+        self.gen += [ResidualBlock(num_channels) for _ in range(num_residual_blocks)]
         # Upsampling
         for _ in range(2):
             self.gen += [
@@ -79,7 +77,7 @@ class Generator(nn.Module):
             num_channels //= 2
         self.gen += [
             nn.ReflectionPad2d(3),
-            nn.Conv2d(64, 3),
+            nn.Conv2d(64, 3, kernel_size=7, stride=1, padding=3),
             nn.Tanh()
         ]
         self.generator = nn.Sequential(*self.gen)
