@@ -46,7 +46,7 @@ class Discriminator(nn.Module):
 
 
 class Generator(nn.Module):
-    def __init__(self, num_residual_blocks=9):
+    def __init__(self, num_residual_blocks=6):
         super(Generator, self).__init__()
         self.gen = [
             nn.ReflectionPad2d(3), # 3 input channels since we're dealing with rgb images
