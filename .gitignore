@@ -8,4 +8,5 @@ cacd_split
 *.mat
 *.csv
 *.zip
+*.tar.gz
 images

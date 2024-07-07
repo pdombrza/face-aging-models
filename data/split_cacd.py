@@ -14,10 +14,9 @@ def main():
     images = os.listdir(IMAGES_PATH)
     names_set = {''.join(img.split('_')[1:-1]) for img in images}
 
-
     for img in images:
         name = ''.join(img.split('_')[1:-1])
-        print(img)
+        # print(img)
         shutil.copyfile(os.path.join(IMAGES_PATH, img), os.path.join(f"{NEWDIR}/{name}", img))
 
     # print(len(names_set))
