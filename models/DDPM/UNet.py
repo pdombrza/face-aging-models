@@ -109,3 +109,110 @@ class Upsample(nn.Module):
         
         return torch.cat([self.cv(x), self.up(x)], dim=1)
 
+
+class DownConv(nn.Module):
+    def __init__(self, in_channels, out_channels, t_emb_dim=128, num_layers=2, down_sample=True):
+        super(DownConv, self).__init__()
+        self.num_layers = num_layers
+        self.conv1 = nn.ModuleList([NormActConv(in_channels if i==0 else out_channels, out_channels) for i in range(num_layers)])
+        self.conv2 = nn.ModuleList([NormActConv(out_channels, out_channels) for _ in range(num_layers)])
+        self.te_block = nn.ModuleList([TimeEmbedding(out_channels, t_emb_dim) for _ in range(num_layers)])
+        self.attn_block = nn.ModuleList([AttentionBlock(out_channels) for _ in range(num_layers)])
+        self.down_block = Downsample(out_channels, out_channels) if down_sample else nn.Identity()
+        self.res_block = nn.ModuleList()
+        for i in range(num_layers):
+            self.res_block.append(
+                nn.Conv2d(in_channels if i == 0 else out_channels, out_channels, kernel_size=1),
+                nn.InstanceNorm2d(out_channels),
+                nn.ReLU(inplace=True),
+            )
+
+    def forward(self, x, t_emb):
+        out = x
+        for i in range(self.num_layers):
+            resnet_input = out
+            res_out = self.conv1[i](out)
+            res_out += self.te_block[i](t_emb)[:, :, None, None]
+            res_out = self.conv2[i](res_out)
+            res_out += self.res_block[i](resnet_input)
+
+            out_attn = self.attn_block[i](res_out)
+            out = out_attn + res_out
+
+        out = self.down_block(out)
+        return out
+    
+
+class MidConv(nn.Module):
+    def __init__(self, in_channels, out_channels, t_emb_dim=128, num_layers=2):
+        super(MidConv, self).__init__()
+        self.num_layers = num_layers
+        self.conv1 = nn.ModuleList([
+            NormActConv(in_channels if i == 1 else out_channels, out_channels) for i in range(num_layers + 1),
+        ])
+        self.conv2 = nn.ModuleList([
+            NormActConv(out_channels, out_channels) for i in range(num_layers + 1),
+        ])
+        self.te_block = nn.ModuleList([TimeEmbedding(out_channels, t_emb_dim) for _ in range(num_layers + 1)])
+        self.attn_block = nn.ModuleList([AttentionBlock(out_channels) for _ in range(num_layers)])
+        self.res_block = nn.ModuleList()
+        for i in range(num_layers):
+            self.res_block.append(
+                nn.Conv2d(in_channels if i == 0 else out_channels, out_channels, kernel_size=1),
+                nn.InstanceNorm2d(out_channels),
+                nn.ReLU(inplace=True),
+            )
+
+    def forward(self, x, t_emb):
+        out = x
+        resnet_input = out
+        out = self.conv1[0](out)
+        out += self.te_block[0](t_emb)[:, :, None, None]
+        out = self.conv2[0](out)
+        out += self.res_block[0](resnet_input)
+
+        for i in range(self.num_layers):
+            out_attn = self.attn_block[i](out)
+            out += out_attn
+
+            resnet_input = out
+            out = self.conv1[i+1](out)
+            out += self.te_block[i+1](t_emb)[:, :, None, None]
+            out = self.conv2[i+1](out)
+            out += self.res_block[i+1](resnet_input)
+
+        return out
+    
+
+class UpConv(nn.Module):
+    def __init__(self, in_channels, out_channels, t_emb_dim=128, num_layers=2, up_sample=True):
+        super(UpConv, self).__init__()
+        self.num_layers = num_layers
+        self.conv1 = nn.ModuleList([NormActConv(in_channels if i==0 else out_channels, out_channels) for i in range(num_layers)])
+        self.conv2 = nn.ModuleList([NormActConv(out_channels, out_channels) for _ in range(num_layers)])
+        self.te_block = nn.ModuleList([TimeEmbedding(out_channels, t_emb_dim) for _ in range(num_layers)])
+        self.attn_block = nn.ModuleList([AttentionBlock(out_channels) for _ in range(num_layers)])
+        self.up_block = Upsample(in_channels, in_channels // 2) if up_sample else nn.Identity()
+        self.res_block = nn.ModuleList()
+        for i in range(num_layers):
+            self.res_block.append(
+                nn.Conv2d(in_channels if i == 0 else out_channels, out_channels, kernel_size=1),
+                nn.InstanceNorm2d(out_channels),
+                nn.ReLU(inplace=True),
+            )
+
+    def forward(self, x, down_out, t_emb):
+        x = self.up_block(x)
+        x = torch.cat([x, down_out], dim=1)
+        out = x
+
+        for i in range(self.num_layers):
+            resnet_input = out
+            out = self.conv1[i](out)
+            out += self.te_block[i](t_emb)[:, :, None, None]
+            out = self.conv2[i](out)
+
+            out_attn = self.attn_block[i](out)
+            out += out_attn
+        
+        return out
