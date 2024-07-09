@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from diffuse_utils import get_time_embedding
 
 
 class NormActConv(nn.Module):
@@ -215,4 +216,92 @@ class UpConv(nn.Module):
             out_attn = self.attn_block[i](out)
             out += out_attn
         
+        return out
+    
+
+class UNet(nn.Module):
+    def __init__(self, 
+                 in_channels=3, 
+                 down_ch=[32, 64, 128, 256], 
+                 mid_ch=[256, 256, 128], 
+                 up_ch=[256, 128, 64, 16], 
+                 down_sample=[True, True, False], 
+                 t_emb_dim=128,
+                 num_downconv_layers=2,
+                 num_midconv_layers=2,
+                 num_upconv_layers=2 
+                 ):
+        super(UNet, self).__init__()
+
+        self.in_channels = in_channels
+        self.down_ch = down_ch
+        self.mid_ch = mid_ch
+        self.up_ch = up_ch
+        self.down_sample = down_sample
+        self.t_emb_dim = t_emb_dim
+        self.num_downconv_layers = num_downconv_layers
+        self.num_midconv_layers = num_midconv_layers
+        self.num_upconv_layers = num_upconv_layers
+
+        self.up_sample = self.down_sample[::-1]
+        self.cv1 = nn.Conv2d(self.in_channels, self.down_ch[0], kernel_size=3, padding=1)
+
+        self.t_proj = nn.Sequential(
+            nn.Linear(self.t_emb_dim, self.t_emb_dim),
+            nn.SiLU(),
+            nn.Linear(self.t_emb_dim, self.t_emb_dim)
+        )
+
+        self.downs = nn.ModuleList([DownConv(
+            self.down_ch[i],
+            self.down_ch[i+1],
+            self.t_emb_dim,
+            self.num_downconv_layers,
+            self.down_sample[i],
+        ) for i in range(len(self.down_ch) - 1)])
+
+        self.mids = nn.ModuleList([
+            MidConv(
+                self.mid_ch[i],
+                self.mid_ch[i+1],
+                self.t_emb_dim,
+                self.num_midconv_layers,
+            ) for i in range(len(self.mid_ch) - 1)
+        ])
+
+        self.ups = nn.ModuleList([
+            UpConv(
+                self.up_ch[i],
+                self.up_ch[i+1],
+                self.t_emb_dim,
+                self.num_upconv_layers,
+                self.up_sample[i]
+            ) for i in range(len(self.up_ch) - 1)
+        ])
+
+        self.cv2 = nn.Sequential(
+            nn.GroupNorm(8, self.up_ch[-1]),
+            nn.Conv2d(self.up_ch[-1], self.in_channels, kernel_size=3, padding=1)
+        )
+
+    def forward(self, x, t):
+        out = self.cv1(x)
+
+        t_emb = get_time_embedding(t, self.t_emb_dim)
+        t_emb = self.t_proj(t_emb)
+        down_outs = []
+
+        for down in self.downs:
+            down_outs.append(out)
+            out = down(out, t_emb)
+
+        for mid in self.mids:
+            out = mid(out, t_emb)
+
+        for up in self.ups:
+            down_out = down_outs.pop()
+            out = up(out, down_out, t_emb)
+
+        out = self.cv2(out)
+
         return out
