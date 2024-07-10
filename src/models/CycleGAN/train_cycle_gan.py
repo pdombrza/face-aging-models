@@ -7,7 +7,8 @@ from torch.utils.data import DataLoader, random_split
 from matplotlib import pyplot as plt
 
 from cycle_gan import Discriminator, Generator
-from ..datasets.fgnet_loader import FGNETCycleGANDataset
+from src.datasets.fgnet_loader import FGNETCycleGANDataset
+from src.datasets.cacd_loader import CACDCycleGANDataset
 
 
 class CycleGAN:

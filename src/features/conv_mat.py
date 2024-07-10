@@ -2,14 +2,9 @@ import scipy.io as io
 import numpy as np
 import pandas as pd
 
+from src.config import CACD_MAT_COLUMNS, CACD_MAT_PATH, CACD_MAT_STRUCTURE, CACD_CSV_PATH
 
-PATH = "celebrity2000_meta.mat"
-STRUCTURE = "celebrityImageData"
-COLUMNS = ("age", "identity", "year", "feature", "rank", "lfw", "birth", "name")
-CSV_PATH = "CACD_features.csv"
-
-
-def convert_to_dataframe(path, structure, columns=COLUMNS):
+def convert_to_dataframe(path, structure, columns=CACD_MAT_COLUMNS):
     mat = io.loadmat(path)
 
     features = mat[structure]
@@ -23,5 +18,5 @@ def convert_to_dataframe(path, structure, columns=COLUMNS):
 
 
 if __name__ == "__main__":
-    df = convert_to_dataframe(PATH, STRUCTURE)
-    df.to_csv(CSV_PATH)
+    df = convert_to_dataframe(CACD_MAT_PATH, CACD_MAT_STRUCTURE)
+    df.to_csv(CACD_CSV_PATH)

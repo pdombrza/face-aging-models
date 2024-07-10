@@ -3,11 +3,14 @@ import numpy as np
 from copy import deepcopy
 import csv
 
-CACD_PATH = "cacd_meta/CACD_features.csv"
-MANUAL_SAVE = "cacd_meta/manual_save.csv"
-MANUAL_READ = "cacd_meta/manual.csv"
-MALE_NAMES = "cacd_meta/male.csv"
-FEMALE_NAMES = "cacd_meta/female.csv"
+from src.config import (
+    CACD_PATH,
+    CACD_MANUAL_READ,
+    CACD_MANUAL_SAVE,
+    CACD_MALE_NAMES_PATH,
+    CACD_FEMALE_NAMES_PATH
+)
+
 
 def write_names_to_csv(data, path):
     with open(path, "w") as fh:
@@ -21,8 +24,8 @@ def main():
 
     cacd_features = deepcopy(pd.read_csv(CACD_PATH))
     cacd_features['name_only'] = cacd_features['name'].map(lambda x: x.split("_")[1])
-    male_names = pd.read_csv(MALE_NAMES)
-    female_names = pd.read_csv(FEMALE_NAMES)
+    male_names = pd.read_csv(CACD_MALE_NAMES_PATH)
+    female_names = pd.read_csv(CACD_FEMALE_NAMES_PATH)
     male_col = pd.DataFrame.from_dict({"gender": ['M' for _ in range(len(male_names))]})
     female_col = pd.DataFrame.from_dict({"gender": ['F' for _ in range(len(female_names))]})
     male_names = pd.concat((male_names, male_col), axis=1)
@@ -52,9 +55,9 @@ def main():
     nan_rows = merged_df[merged_df['gender'].isna()]
 
     ungendered_names = set(nan_rows['name'].map(lambda x: x.split("_")[1]))
-    # write_names_to_csv(ungendered_names, MANUAL_SAVE)
+    # write_names_to_csv(ungendered_names, CACD_MANUAL_SAVE)
 
-    annotated = pd.read_csv(MANUAL_READ)
+    annotated = pd.read_csv(CACD_MANUAL_READ)
     print(annotated.head())
 
 

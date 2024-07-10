@@ -1,13 +1,10 @@
 import os
 import shutil
 
-
-IMAGES_DIR = "./images/"
-INDIVIDUALS_DIR = "./individuals"
-
+from src.config import FGNET_IMAGES_DIR, FGNET_INDIVIDUALS_DIR
 
 def main():
-    image_names = list(os.listdir(IMAGES_DIR))
+    image_names = list(os.listdir(FGNET_IMAGES_DIR))
     individuals = {name[:3] for name in image_names}
     ind_files = []
     for i in individuals:
@@ -18,7 +15,7 @@ def main():
 
     for img in ind_files:
         shutil.copyfile(
-            os.path.join(IMAGES_DIR, img), os.path.join(INDIVIDUALS_DIR, img)
+            os.path.join(FGNET_IMAGES_DIR, img), os.path.join(FGNET_INDIVIDUALS_DIR, img)
         )
 
 
