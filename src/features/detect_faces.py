@@ -34,7 +34,7 @@ def detect():
 
 
 def cluster(embeddings):
-    clustering_model = DBSCAN(eps=0.6, min_samples=2, metric='euclidean')
+    clustering_model = DBSCAN(eps=0.6, min_samples=1, metric='euclidean')
     labels = clustering_model.fit_predict(embeddings)
     return labels
 
@@ -62,4 +62,5 @@ def main():
 
 
 if __name__ == '__main__':
+    # TODO: delete images where multiple faces are detected
     main()
