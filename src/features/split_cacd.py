@@ -1,7 +1,7 @@
 import os
 import shutil
 
-from src.config import CACD_IMAGES_PATH, CACD_SPLIT_DIR
+from src.constants import CACD_IMAGES_PATH, CACD_SPLIT_DIR
 
 
 def create_directories(names):

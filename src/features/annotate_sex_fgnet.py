@@ -1,7 +1,7 @@
 import os
 import shutil
 
-from src.config import FGNET_IMAGES_DIR, FGNET_INDIVIDUALS_DIR
+from src.constants import FGNET_IMAGES_DIR, FGNET_INDIVIDUALS_DIR
 
 def main():
     image_names = list(os.listdir(FGNET_IMAGES_DIR))

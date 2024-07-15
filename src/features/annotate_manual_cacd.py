@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from copy import deepcopy
 
-from src.config import CACD_META_SEX_ANNOTATED_PATH, CACD_MANUAL_READ, CACD_META_SEX_ANNOTATED_PATH
+from src.constants import CACD_META_SEX_ANNOTATED_PATH, CACD_MANUAL_READ, CACD_META_SEX_ANNOTATED_PATH
 
 def main():
     save = True
