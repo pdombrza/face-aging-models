@@ -62,5 +62,4 @@ def main():
 
 
 if __name__ == '__main__':
-    # TODO: delete images where multiple faces are detected
     main()
