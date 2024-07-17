@@ -2,13 +2,13 @@ if __name__ == "__main__":
     import sys
     sys.path.append('../src')
 
-import cv2
-from facenet_pytorch import MTCNN, InceptionResnetV1
+from facenet_pytorch import MTCNN
 import torch
 from PIL import Image
 import os
+from tqdm import tqdm
 
-from constants import CACD_SPLIT_DIR
+from constants import CACD_SPLIT_DIR_NO_MULTIPLE
 
 
 def detect_faces(image_path):
@@ -19,17 +19,25 @@ def detect_faces(image_path):
     return boxes
 
 
-def filter_multiple():
-    img_dir = f"{CACD_SPLIT_DIR}/50Cent"
+def filter_multiple(remove=False):
+    img_dir = CACD_SPLIT_DIR_NO_MULTIPLE
+    img_directories = CACD_SPLIT_DIR_NO_MULTIPLE
 
-    for img in os.listdir(img_dir):
-        faces = detect_faces(os.path.join(img_dir, img))
-        if len(faces) > 1 or faces is None:
-            print(img)
+    for img_dir in tqdm(os.listdir(img_directories)):
+        img_dir_path = os.path.join(img_directories, img_dir)
+        for img in os.listdir(img_dir_path):
+            img_path = os.path.join(img_dir_path, img)
+            faces = detect_faces(img_path)
+            if faces is None:
+                print(f"None: {img}")
+            elif len(faces) > 1:
+                print(img)
+                if remove:
+                    os.remove(img_path)
 
 
 def main():
-    filter_multiple()
+    filter_multiple(True)
 
 
 if __name__ == "__main__":
