@@ -32,13 +32,14 @@ class CACDDataset(Dataset):
 
         return celeb_name, image, person_age, person_gender
 
+
 class CACDCycleGANDataset(Dataset):
     def __init__(self, csv_file, img_root_dir, transform=None):
         self.metadata = pd.read_csv(csv_file)
         self.transform = transform
         self.img_root_dir = img_root_dir
-        self.young_images = self.metadata[(self.metadata['age'] >= 20 & self.metadata['age'] <= 30)]
-        self.old_images = self.metadata[(self.metadata['age'] >= 50 & self.metadata['age'] <= 60)]
+        self.young_images = self.metadata[(self.metadata['age'] >= 20) & (self.metadata['age'] <= 30)]
+        self.old_images = self.metadata[(self.metadata['age'] >= 50) & (self.metadata['age'] <= 60)]
 
     def __len__(self):
         return min(len(self.young_images), len(self.old_images))

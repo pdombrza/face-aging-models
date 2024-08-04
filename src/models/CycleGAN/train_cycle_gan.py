@@ -1,3 +1,7 @@
+if __name__ == "__main__":
+    import sys
+    sys.path.append('../src')
+
 import torch
 import torchvision
 import torch.nn as nn
@@ -7,8 +11,9 @@ from torch.utils.data import DataLoader, random_split
 from matplotlib import pyplot as plt
 
 from cycle_gan import Discriminator, Generator
-from src.datasets.fgnet_loader import FGNETCycleGANDataset
-from src.datasets.cacd_loader import CACDCycleGANDataset
+from constants import FGNET_IMAGES_DIR, CACD_META_SEX_ANNOTATED_PATH, CACD_SPLIT_DIR
+from datasets.fgnet_loader import FGNETCycleGANDataset
+from datasets.cacd_loader import CACDCycleGANDataset
 
 
 class CycleGAN:
@@ -49,7 +54,7 @@ def prep_optimizers(optim_params: list[tuple]):
 
 
 
-def visualize_images(input_images, aged_images, reconstruct=True):
+def visualize_images(input_images, aged_images, reconstruct=True, save=False, save_path=None):
     if reconstruct:
         imgs = torch.stack([input_images, aged_images], dim=1).flatten(0,1)
         imgs = imgs / 2 + 0.5
@@ -63,12 +68,17 @@ def visualize_images(input_images, aged_images, reconstruct=True):
     plt.title(title)
     plt.imshow(grid)
     plt.axis('off')
-    plt.show()
-
+    if save:
+        if save_path is None:
+            plt.savefig('temp_path.jpg')
+        else:
+            plt.savefig(save_path)
+    else:
+        plt.show()
 
 
 def train():
-    images_path = "data/FGNET/FGNET/images"
+    fgnet_images_path = FGNET_IMAGES_DIR
     prepare_cuda()
     device = torch.device("cuda")
 
@@ -88,7 +98,9 @@ def train():
 
     transform = prepare_transform()
 
-    dataset = FGNETCycleGANDataset(images_path, transform=transform)
+    cacd_meta = CACD_META_SEX_ANNOTATED_PATH
+    cacd_images = CACD_SPLIT_DIR
+    dataset = CACDCycleGANDataset(csv_file=cacd_meta, img_root_dir=cacd_images, transform=transform)
     n_valid_images = 16
     train_size = len(dataset) - n_valid_images
     train_set, valid_set = random_split(dataset, (train_size, n_valid_images))
@@ -167,7 +179,7 @@ def train():
     for i, (real_x, real_y) in enumerate(valid_loader):
         real_x = real_x.to(device)
         out = age_images(cycle_gan, real_x)
-        visualize_images(real_x.cpu(), out)
+        visualize_images(real_x.cpu(), out, save=True)
     # aged_images = age_images(cycle_gan, next(iter(valid_loader)))
 
 
