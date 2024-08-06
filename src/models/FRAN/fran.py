@@ -27,7 +27,7 @@ class UpBlock(nn.Module):
         )
 
     def forward(self, x):
-        # TODO: take care of upsample size shenanigans
+        # TODO: implement skip connections
         return self.up_block(x)
 
 
@@ -46,3 +46,33 @@ class DownBlock(nn.Module):
 
     def forward(self, x):
         return self.down_block(x)
+
+
+class Generator(nn.Module):
+    def __init__(self, in_channels, num_channels=64, num_unet_blocks=4):
+        super(Generator, self).__init__()
+        self.num_channels = num_channels
+        self.gen = [
+            nn.Conv2d(in_channels, num_channels, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(num_channels),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(num_channels, num_channels, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(num_channels),
+            nn.LeakyReLU(0.2, inplace=True),
+        ]
+        # downsampling
+        for _ in range(num_unet_blocks):
+            self.gen += DownBlock(self.num_channels, 2 * self.num_channels)
+            self.num_channels *= 2
+        # upsampling
+        for _ in range(num_unet_blocks):
+            self.gen += UpBlock(self.num_channels, self.num_channels // 2)
+            self.num_channels //= 2
+
+        self.gen += [
+            nn.Conv2d(in_channels=self.num_channels, out_channels=in_channels, kernel_size=1, stride=1)
+        ]
+        self.generator = nn.Sequential(*self.gen)
+
+    def forward(self, x):
+        return self.generator(x)
