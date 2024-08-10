@@ -62,6 +62,16 @@ class CACDCycleGANDataset(Dataset):
         return young_image, old_image
 
 
+class CACDFRANDataset(Dataset):
+    def __init__(self, csv_file, img_root_dir, transform=None):
+        ...
+
+    def __len__(self):
+        ...
+
+    def __getitem__(self, index):
+        ...
+
 
 def main():
     meta_path = "cacd_meta/CACD_features_sex.csv"

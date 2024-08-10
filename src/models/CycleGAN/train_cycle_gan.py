@@ -176,6 +176,7 @@ def train():
             total_dy_loss += loss_dy.item()
         print(f"Epoch: [{epoch}/{num_epochs}] loss cycle_gan.g: {total_g_loss / batch_size:.4f} loss cycle_gan.f: {total_f_loss / batch_size:.4f} loss cycle_gan.d_x {total_dx_loss / batch_size:.4f} loss cycle_gan.d_y {total_dy_loss / batch_size:.4f}")
 
+    # evaluate
     for i, (real_x, real_y) in enumerate(valid_loader):
         real_x = real_x.to(device)
         out = age_images(cycle_gan, real_x)

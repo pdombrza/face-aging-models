@@ -65,6 +65,17 @@ class FGNETCycleGANDataset(Dataset):
             old_image = self.transform(old_image)
 
         return young_image, old_image
+    
+
+class FGNETFRANDataset(Dataset):
+    def __init__(self, images_path, transform=None):
+        ...
+
+    def __len__(self):
+        ...
+
+    def __getitem__(self, index):
+        ...
 
 
 def main():
