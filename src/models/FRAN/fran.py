@@ -88,12 +88,15 @@ class Discriminator(nn.Module):
         if normalization:
             self.disc.append(nn.InstanceNorm2d(64))
         self.disc.append(nn.LeakyReLU(0.2, inplace=True))
+        self.disc.append(kornia.filters.MaxBlurPool2D(kernel_size=3))
 
-        for _ in range(num_blocks):
+        for i in range(num_blocks-1):
             layers = [nn.Conv2d(self.num_channels, 2 * self.num_channels, kernel_size=3, stride=1, padding=1)]
             if normalization:
                 layers.append(nn.InstanceNorm2d(2 * self.num_channels))
             layers.append(nn.LeakyReLU(0.2, inplace=True))
+            if i != num_blocks - 1:
+                layers.append(kornia.filters.MaxBlurPool2D(kernel_size=3))
             self.num_channels *= 2
             self.disc += layers
 
