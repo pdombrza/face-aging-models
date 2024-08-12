@@ -1,5 +1,9 @@
+from collections import deque
+
 import kornia
+import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 
 class BlurUpsample(nn.Module):
@@ -16,9 +20,9 @@ class BlurUpsample(nn.Module):
 class UpBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(UpBlock, self).__init__()
+        self.blur_upsample = BlurUpsample(in_channels)
         self.up_block = nn.Sequential(
-            BlurUpsample(in_channels),
-            nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(in_channels + out_channels, out_channels, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(out_channels),
             nn.LeakyReLU(0.2, inplace=True),
             nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=1, padding=1),
@@ -26,8 +30,13 @@ class UpBlock(nn.Module):
             nn.LeakyReLU(0.2, inplace=True),
         )
 
-    def forward(self, x):
-        # TODO: implement skip connections
+    def forward(self, x, x_skip_conn):
+        x = self.blur_upsample(x)
+        # possibly need to pad x to have the same size as x_skip_connection?
+        # delta_height = x_skip_conn.size(2) - x.size(2) # size(2) since we have B x C x H x W
+        # delta_width = x_skip_conn.size(3) - x.size(3) # size(3) since we have B x C x H x W
+        # x = F.pad(x, (delta_width // 2, delta_width - delta_width // 2, delta_height // 2, delta_height - delta_height // 2)) # tuple left, right, top, bottom
+        x = torch.cat([x, x_skip_conn], dim=1)
         return self.up_block(x)
 
 
@@ -52,30 +61,42 @@ class Generator(nn.Module):
     def __init__(self, in_channels, num_channels=64, num_unet_blocks=4):
         super(Generator, self).__init__()
         self.num_channels = num_channels
-        self.gen = [
+        self.in_layers = nn.Sequential(
             nn.Conv2d(in_channels, num_channels, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(num_channels),
             nn.LeakyReLU(0.2, inplace=True),
             nn.Conv2d(num_channels, num_channels, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(num_channels),
             nn.LeakyReLU(0.2, inplace=True),
-        ]
+        )
         # downsampling
+        self.downsample = []
         for _ in range(num_unet_blocks):
-            self.gen += DownBlock(self.num_channels, 2 * self.num_channels)
+            self.downsample.append(DownBlock(self.num_channels, 2 * self.num_channels))
             self.num_channels *= 2
         # upsampling
+        self.upsample = []
         for _ in range(num_unet_blocks):
-            self.gen += UpBlock(self.num_channels, self.num_channels // 2)
+            self.upsample.append(UpBlock(self.num_channels, self.num_channels // 2))
             self.num_channels //= 2
 
-        self.gen += [
+        self.out_layers = nn.Sequential(
             nn.Conv2d(in_channels=self.num_channels, out_channels=in_channels, kernel_size=1, stride=1)
-        ]
+        )
         self.generator = nn.Sequential(*self.gen)
 
     def forward(self, x):
-        return self.generator(x)
+        x = self.in_layers(x)
+        skip_values = deque()
+        # downsampling
+        for dlayer in self.downsample:
+            x = dlayer(x)
+            skip_values.append(x)
+        # upsampling
+        for ulayer in self.upsample:
+            x = ulayer(x, skip_values.popleft())
+        x = self.out_layers(x)
+        return x
 
 
 class Discriminator(nn.Module):
