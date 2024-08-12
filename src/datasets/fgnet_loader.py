@@ -1,8 +1,22 @@
 import os
+from itertools import permutations
 from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 import torchvision.transforms as transforms
 from torchvision.io import ImageReadMode, read_image
+
+
+def gen_fgnet_img_pairs_fran(images_path):
+    images = os.listdir(images_path)
+    image_path_pairs = []
+    images_by_id = {i: [] for i in range(1, 83)}
+    for img in images:
+        img_meta = img.split(".")[0]
+        person_id = int(img_meta[:3])
+        images_by_id[person_id].append(img)
+
+    for person in images_by_id:
+        image_path_pairs.append(permutations(images_by_id[person], 2))
 
 
 class FGNETDataset(Dataset):
@@ -65,11 +79,13 @@ class FGNETCycleGANDataset(Dataset):
             old_image = self.transform(old_image)
 
         return young_image, old_image
-    
+
 
 class FGNETFRANDataset(Dataset):
     def __init__(self, images_path, transform=None):
-        ...
+        self.images_path = images_path
+        self.transform = transform
+        self.images = os.listdir(images_path)
 
     def __len__(self):
         ...
