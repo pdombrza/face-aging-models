@@ -65,6 +65,7 @@ def train():
     l1_loss = nn.L1Loss()
     perceptual_loss = LPIPS(net_type='vgg')
     adversarial_loss = nn.BCEWithLogitsLoss()
+    # as it was written (in the fran paper)
     lambda_l1 = 1.0
     lambda_lpips = 1.0
     lambda_adv = 0.05
@@ -88,16 +89,17 @@ def train():
         running_generator_loss = 0.0
         running_discriminator_loss = 0.0
         for i, batch in enumerate(train_loader):
-            input_img = batch['input'].to(device)
-            target_img = batch['target'].to(device)
+            full_input = batch['input'].to(device)
+            input_img = batch['input_img'].to(device)
+            target_img = batch['target_img'].to(device)
             target_age = batch['target_age'].to(device)
 
-            output = model.generator(input_img)
+            output = model.generator(full_input)
             predicted = input_img + output
             predicted_with_age = torch.cat((predicted, target_age), dim=1)
 
-            real = torch.ones_like(batch['input']) # TODO: validate if this is correct
-            fake = torch.zeros_like(batch['input'])
+            real = torch.ones_like(batch['input']).to(device) # TODO: validate if this is correct
+            fake = torch.zeros_like(batch['input']).to(device)
 
             # Discriminator losses
 

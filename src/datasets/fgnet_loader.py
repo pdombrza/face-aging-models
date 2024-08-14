@@ -1,9 +1,15 @@
+if __name__ == "__main__":
+    import sys
+    sys.path.append('../src')
+
 import os
 from itertools import permutations
 from PIL import Image
+import torch
 from torch.utils.data import Dataset, DataLoader
 import torchvision.transforms as transforms
 from torchvision.io import ImageReadMode, read_image
+from constants import FGNET_IMAGES_DIR, CACD_META_SEX_ANNOTATED_PATH, CACD_SPLIT_DIR
 
 
 def gen_fgnet_img_pairs_fran(images_path):
@@ -16,7 +22,10 @@ def gen_fgnet_img_pairs_fran(images_path):
         images_by_id[person_id].append(img)
 
     for person in images_by_id:
-        image_path_pairs.append(permutations(images_by_id[person], 2))
+        for perm in permutations(images_by_id[person], 2):
+            image_path_pairs.append(perm)
+
+    return image_path_pairs
 
 
 class FGNETDataset(Dataset):
@@ -85,29 +94,51 @@ class FGNETFRANDataset(Dataset):
     def __init__(self, images_path, transform=None):
         self.images_path = images_path
         self.transform = transform
-        self.images = os.listdir(images_path)
+        self.image_pairs = gen_fgnet_img_pairs_fran(images_path)
 
     def __len__(self):
-        ...
+        return len(self.image_pairs)
 
     def __getitem__(self, index):
-        ...
+        image_pair = self.image_pairs[index]
+        input_image = read_image(os.path.join(self.images_path, image_pair[0]), mode=ImageReadMode.RGB)
+        target_image = read_image(os.path.join(self.images_path, image_pair[1]), mode=ImageReadMode.RGB)
+
+        if self.transform is not None:
+            input_image = self.transform(input_image)
+            target_image = self.transform(target_image)
+
+        input_age = int(image_pair[0][4:6])
+        target_age = int(image_pair[1][4:6])
+        age_tensor_input = torch.full((1, input_image.shape[1], input_image.shape[2]), input_age / 100)  # 1 x W x H
+        age_tensor_target = torch.full((1, target_image.shape[1], target_image.shape[2]), target_age / 100)  # 1 x W x H
+
+        tensor_input = torch.cat((input_image, age_tensor_input, age_tensor_target), dim=0)
+
+        return {
+            "input": tensor_input,
+            "input_img": input_image,
+            "target_img": target_image,
+            "target_age": age_tensor_target,
+        }
 
 
 def main():
-    images_path = "FGNET/FGNET/individuals"
+    images_path = FGNET_IMAGES_DIR
     transform = transforms.Compose(
         [
+            transforms.ConvertImageDtype(dtype=torch.float),
             transforms.Resize((256, 256)),
-            transforms.ToTensor(),
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
         ]
     )
 
-    dataset = FGNETDataset(images_path, transform=transform)
+    dataset = FGNETFRANDataset(images_path, transform=transform)
 
     dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
     print(next(iter(dataloader)))
+    # image_pairs = gen_fgnet_img_pairs_fran(images_path)
+    # print(image_pairs)
 
 
 if __name__ == "__main__":
