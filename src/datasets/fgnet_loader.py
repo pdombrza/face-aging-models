@@ -9,7 +9,7 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 import torchvision.transforms as transforms
 from torchvision.io import ImageReadMode, read_image
-from constants import FGNET_IMAGES_DIR, CACD_META_SEX_ANNOTATED_PATH, CACD_SPLIT_DIR
+from constants import FGNET_IMAGES_DIR
 
 
 def gen_fgnet_img_pairs_fran(images_path):
