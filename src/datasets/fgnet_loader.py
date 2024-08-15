@@ -136,7 +136,8 @@ def main():
     dataset = FGNETFRANDataset(images_path, transform=transform)
 
     dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
-    print(next(iter(dataloader)))
+    res = next(iter(dataloader))
+    print(torch.min(res["input"]))
     # image_pairs = gen_fgnet_img_pairs_fran(images_path)
     # print(image_pairs)
 

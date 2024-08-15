@@ -1,4 +1,4 @@
-from collections import deque
+from copy import copy
 
 import kornia
 import torch
@@ -8,9 +8,10 @@ import torch.nn.functional as F
 
 class BlurUpsample(nn.Module):
     def __init__(self, blur_kernel_size=(3, 3), blur_kernel_sigma=(1.5, 1.5), upsample_scale=(2, 2)):
+        super(BlurUpsample, self).__init__()
         self.blur_upsample = nn.Sequential(
-            kornia.filters.GaussianBlur2d(blur_kernel_size, blur_kernel_sigma),
-            nn.Upsample(scale_factor=upsample_scale, align_corners=False)
+            kornia.filters.GaussianBlur2d((3, 3), (1.5, 1.5)),
+            nn.Upsample(scale_factor=upsample_scale, mode='bilinear', align_corners=False)
         )
 
     def forward(self, x):
@@ -33,10 +34,11 @@ class UpBlock(nn.Module):
     def forward(self, x, x_skip_conn):
         x = self.blur_upsample(x)
         # possibly need to pad x to have the same size as x_skip_connection?
-        # delta_height = x_skip_conn.size(2) - x.size(2) # size(2) since we have B x C x H x W
-        # delta_width = x_skip_conn.size(3) - x.size(3) # size(3) since we have B x C x H x W
-        # x = F.pad(x, (delta_width // 2, delta_width - delta_width // 2, delta_height // 2, delta_height - delta_height // 2)) # tuple left, right, top, bottom
+        delta_height = x_skip_conn.size(2) - x.size(2)  # size(2) since we have B x C x H x W
+        delta_width = x_skip_conn.size(3) - x.size(3)  # size(3) since we have B x C x H x W
+        x = F.pad(x, (delta_width // 2, delta_width - delta_width // 2, delta_height // 2, delta_height - delta_height // 2)) # tuple left, right, top, bottom
         x = torch.cat([x, x_skip_conn], dim=1)
+        # print("fin x:", x.shape)
         return self.up_block(x)
 
 
@@ -81,20 +83,20 @@ class Generator(nn.Module):
             self.num_channels //= 2
 
         self.out_layers = nn.Sequential(
-            nn.Conv2d(in_channels=self.num_channels, out_channels=in_channels, kernel_size=1, stride=1)
+            nn.Conv2d(in_channels=self.num_channels, out_channels=3, kernel_size=1, stride=1)
         )
-        self.generator = nn.Sequential(*self.gen)
 
     def forward(self, x):
         x = self.in_layers(x)
-        skip_values = deque()
+        skip_values = [copy(x)]
         # downsampling
         for dlayer in self.downsample:
             x = dlayer(x)
             skip_values.append(x)
         # upsampling
+        skip_values.pop()
         for ulayer in self.upsample:
-            x = ulayer(x, skip_values.popleft())
+            x = ulayer(x, skip_values.pop())
         x = self.out_layers(x)
         return x
 
@@ -107,7 +109,7 @@ class Discriminator(nn.Module):
             nn.Conv2d(in_channels, self.num_channels, kernel_size=3, stride=1, padding=1),
         ]
         if normalization:
-            self.disc.append(nn.InstanceNorm2d(64))
+            self.disc.append(nn.InstanceNorm2d(self.num_channels))
         self.disc.append(nn.LeakyReLU(0.2, inplace=True))
         self.disc.append(kornia.filters.MaxBlurPool2D(kernel_size=3))
 
@@ -121,7 +123,7 @@ class Discriminator(nn.Module):
             self.num_channels *= 2
             self.disc += layers
 
-        self.disc.append(nn.Conv2d(num_channels, 1, kernel_size=3, stride=1, padding=1))
+        self.disc.append(nn.Conv2d(self.num_channels, 1, kernel_size=3, stride=1, padding=1))
 
         self.discriminator = nn.Sequential(*self.disc)
 
