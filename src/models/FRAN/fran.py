@@ -10,7 +10,7 @@ class BlurUpsample(nn.Module):
     def __init__(self, blur_kernel_size=(3, 3), blur_kernel_sigma=(1.5, 1.5), upsample_scale=(2, 2)):
         super(BlurUpsample, self).__init__()
         self.blur_upsample = nn.Sequential(
-            kornia.filters.GaussianBlur2d((3, 3), (1.5, 1.5)),
+            kornia.filters.GaussianBlur2d(kernel_size=(3, 3), sigma=(1.5, 1.5)),
             nn.Upsample(scale_factor=upsample_scale, mode='bilinear', align_corners=False)
         )
 
@@ -60,7 +60,7 @@ class DownBlock(nn.Module):
 
 
 class Generator(nn.Module):
-    def __init__(self, in_channels, num_channels=64, num_unet_blocks=4):
+    def __init__(self, in_channels=5, num_channels=64, num_unet_blocks=4):
         super(Generator, self).__init__()
         self.num_channels = num_channels
         self.in_layers = nn.Sequential(
@@ -72,12 +72,12 @@ class Generator(nn.Module):
             nn.LeakyReLU(0.2, inplace=True),
         )
         # downsampling
-        self.downsample = []
+        self.downsample = nn.ModuleList()
         for _ in range(num_unet_blocks):
             self.downsample.append(DownBlock(self.num_channels, 2 * self.num_channels))
             self.num_channels *= 2
         # upsampling
-        self.upsample = []
+        self.upsample = nn.ModuleList()
         for _ in range(num_unet_blocks):
             self.upsample.append(UpBlock(self.num_channels, self.num_channels // 2))
             self.num_channels //= 2
@@ -102,7 +102,7 @@ class Generator(nn.Module):
 
 
 class Discriminator(nn.Module):
-    def __init__(self, in_channels, num_channels=64, num_blocks=3, normalization=True):
+    def __init__(self, in_channels=4, num_channels=64, num_blocks=3, normalization=True):
         super(Discriminator, self).__init__()
         self.num_channels = num_channels
         self.disc = [
