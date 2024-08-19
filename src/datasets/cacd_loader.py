@@ -78,7 +78,10 @@ class CACDCycleGANDataset(Dataset):
             young_image = self.transform(young_image)
             old_image = self.transform(old_image)
 
-        return young_image, old_image
+        return {
+            "young_image": young_image,
+            "old_image": old_image,
+        }
 
 
 class CACDFRANDataset(Dataset):

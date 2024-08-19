@@ -25,11 +25,11 @@ class FRAN(L.LightningModule):
         super(FRAN, self).__init__()
         self.generator = generator
         self.discriminator = discriminator
-        self.automatic_optimization = False
         self.loss_params = loss_params
         self.l1_loss = nn.L1Loss()  # maybe dependency injection
         self.adversarial_loss = nn.BCEWithLogitsLoss()
         self.perceptual_loss = LPIPS(net_type='vgg')
+        self.automatic_optimization = False
 
     def training_step(self, batch, batch_idx):
         gen_optimizer, dis_optimizer = self.optimizers()
