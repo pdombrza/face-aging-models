@@ -1,4 +1,5 @@
 from copy import copy
+from typing import Iterable
 
 import kornia
 import torch
@@ -7,19 +8,19 @@ import torch.nn.functional as F
 
 
 class BlurUpsample(nn.Module):
-    def __init__(self, blur_kernel_size=(3, 3), blur_kernel_sigma=(1.5, 1.5), upsample_scale=(2, 2)):
+    def __init__(self, blur_kernel_size: Iterable = (3, 3), blur_kernel_sigma: Iterable = (1.5, 1.5), upsample_scale: Iterable = (2, 2)) -> None:
         super(BlurUpsample, self).__init__()
         self.blur_upsample = nn.Sequential(
-            kornia.filters.GaussianBlur2d(kernel_size=(3, 3), sigma=(1.5, 1.5)),
+            kornia.filters.GaussianBlur2d(kernel_size=blur_kernel_size, sigma=blur_kernel_sigma),
             nn.Upsample(scale_factor=upsample_scale, mode='bilinear', align_corners=False)
         )
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.blur_upsample(x)
 
 
 class UpBlock(nn.Module):
-    def __init__(self, in_channels, out_channels):
+    def __init__(self, in_channels: int, out_channels: int) -> None:
         super(UpBlock, self).__init__()
         self.blur_upsample = BlurUpsample(in_channels)
         self.up_block = nn.Sequential(
@@ -31,7 +32,7 @@ class UpBlock(nn.Module):
             nn.LeakyReLU(0.2, inplace=True),
         )
 
-    def forward(self, x, x_skip_conn):
+    def forward(self, x: torch.Tensor, x_skip_conn: torch.Tensor) -> torch.Tensor:
         x = self.blur_upsample(x)
         # possibly need to pad x to have the same size as x_skip_connection?
         delta_height = x_skip_conn.size(2) - x.size(2)  # size(2) since we have B x C x H x W
@@ -43,7 +44,7 @@ class UpBlock(nn.Module):
 
 
 class DownBlock(nn.Module):
-    def __init__(self, in_channels, out_channels):
+    def __init__(self, in_channels: int, out_channels: int) -> None:
         super(DownBlock, self).__init__()
         self.down_block = nn.Sequential(
             kornia.filters.MaxBlurPool2D(kernel_size=3),
@@ -55,12 +56,12 @@ class DownBlock(nn.Module):
             nn.LeakyReLU(0.2, inplace=True),
         )
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.down_block(x)
 
 
 class Generator(nn.Module):
-    def __init__(self, in_channels=5, num_channels=64, num_unet_blocks=4):
+    def __init__(self, in_channels: int = 5, num_channels: int = 64, num_unet_blocks: int = 4):
         super(Generator, self).__init__()
         self.num_channels = num_channels
         self.in_layers = nn.Sequential(
@@ -86,7 +87,7 @@ class Generator(nn.Module):
             nn.Conv2d(in_channels=self.num_channels, out_channels=3, kernel_size=1, stride=1)
         )
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.in_layers(x)
         skip_values = [copy(x)]
         # downsampling
@@ -102,7 +103,7 @@ class Generator(nn.Module):
 
 
 class Discriminator(nn.Module):
-    def __init__(self, in_channels=4, num_channels=64, num_blocks=3, normalization=True):
+    def __init__(self, in_channels: int = 4, num_channels: int = 64, num_blocks: int = 3, normalization: int = True):
         super(Discriminator, self).__init__()
         self.num_channels = num_channels
         self.disc = [
@@ -127,5 +128,5 @@ class Discriminator(nn.Module):
 
         self.discriminator = nn.Sequential(*self.disc)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.discriminator(x)

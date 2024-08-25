@@ -24,7 +24,7 @@ from datasets.cacd_loader import CACDCycleGANDataset
 
 class CycleGAN(L.LightningModule):
     # combines the generators and discriminators
-    def __init__(self, generator: Generator, discriminator: Discriminator, optimizer_params: dict, loss_params: CycleGANLossLambdaParams):
+    def __init__(self, generator: Generator, discriminator: Discriminator, optimizer_params: dict, loss_params: CycleGANLossLambdaParams) -> None:
         super(CycleGAN, self).__init__()
         self.g = generator
         self.f = generator
@@ -37,7 +37,7 @@ class CycleGAN(L.LightningModule):
         self.optimizer_params = optimizer_params
         self.automatic_optimization = False
 
-    def training_step(self, batch, batch_idx):
+    def training_step(self, batch: torch.Tensor, batch_idx: int) -> None:
         real_x = batch["young_image"]
         real_y = batch["old_image"]
 
@@ -107,13 +107,13 @@ class CycleGAN(L.LightningModule):
             },
             prog_bar=True
         )
-        
+
         return
 
-    def validation_step(self, batch, batch_idx):
+    def validation_step(self, batch: torch.Tensor, batch_idx: int) -> None:
         if not self.logger:
-            return 
-        
+            return
+
         with torch.no_grad():
             real_x = batch["young_image"]
             real_y = batch["old_image"]
@@ -138,7 +138,7 @@ class CycleGAN(L.LightningModule):
         return (x * 0.5) + 0.5
 
 
-def visualize_images(input_images, aged_images, reconstruct=True, save=False, save_path=None):
+def visualize_images(input_images: torch.Tensor, aged_images: torch.Tensor, reconstruct: bool = True, save: bool = False, save_path: bool = None) -> None:
     if reconstruct:
         imgs = torch.stack([input_images, aged_images], dim=1).flatten(0,1)
         imgs = imgs / 2 + 0.5

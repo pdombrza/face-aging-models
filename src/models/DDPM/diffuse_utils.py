@@ -1,5 +1,6 @@
 import torch
 
+
 class DiffusionForward:
     def __init__(self, timesteps=1000, beta_start=1e-4, beta_end=0.02, beta_schedule="linear", cosine_s=8e-3):
         if beta_schedule == "linear":
@@ -8,7 +9,6 @@ class DiffusionForward:
             self.alpha_bars = torch.cumprod(self.alphas, dim=0)
             self.sqrt_alpha_bars = torch.sqrt(self.alpha_bars)
             self.sqrt_one_minus_alpha_bars = torch.sqrt(1 - self.alpha_bars)
-        # TODO implement cosine scheduling (but first obviously add image translation properties - BBDM)
 
     def add_noise(self, original, noise, t):
         sqrt_alpha_bar_t = self.sqrt_alpha_bars.to(original.device)[t]

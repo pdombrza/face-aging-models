@@ -21,7 +21,7 @@ from fran_utils import FRANLossLambdaParams
 
 
 class FRAN(L.LightningModule):
-    def __init__(self, generator: Generator, discriminator: Discriminator, loss_params: FRANLossLambdaParams):
+    def __init__(self, generator: Generator, discriminator: Discriminator, loss_params: FRANLossLambdaParams) -> None:
         super(FRAN, self).__init__()
         self.generator = generator
         self.discriminator = discriminator
@@ -31,7 +31,7 @@ class FRAN(L.LightningModule):
         self.perceptual_loss = LPIPS(net_type='vgg')
         self.automatic_optimization = False
 
-    def training_step(self, batch, batch_idx):
+    def training_step(self, batch: torch.Tensor, batch_idx: int) -> None:
         gen_optimizer, dis_optimizer = self.optimizers()
         full_input = batch['input']
         input_img = batch['input_img']
@@ -81,7 +81,7 @@ class FRAN(L.LightningModule):
 
         return
 
-    def validation_step(self, batch, batch_idx):
+    def validation_step(self, batch: torch.Tensor, batch_idx: int) -> None:
         if not self.logger:
             return
 
@@ -98,19 +98,19 @@ class FRAN(L.LightningModule):
         self.logger.experiment.add_image(f"output_{target_age}", torchvision.utils.make_grid(self._unnormalize_output(predicted_norm[0])), self.current_epoch)
         self.logger.experiment.add_image(f"target_{target_age}", torchvision.utils.make_grid(self._unnormalize_output(target_img[0])), self.current_epoch)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.generator(x)
 
-    def configure_optimizers(self):
+    def configure_optimizers(self) -> list:
         gen_optimizer = optim.Adam(self.generator.parameters(), lr=0.0001)
         dis_optimizer = optim.Adam(self.discriminator.parameters(), lr=0.0001)
         return [gen_optimizer, dis_optimizer]
 
-    def _normalize_output(self, output: torch.tensor, min_val: float, max_val: float) -> torch.tensor:
+    def _normalize_output(self, output: torch.Tensor, min_val: float, max_val: float) -> torch.Tensor:
         output = (output - min_val) / (max_val - min_val)
         return output * 2.0 - 1.0
 
-    def _unnormalize_output(self, x):
+    def _unnormalize_output(self, x: torch.Tensor) -> torch.Tensor:
         return (x * 0.5) + 0.5
 
 

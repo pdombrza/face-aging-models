@@ -1,7 +1,9 @@
+import torch
 import torch.nn as nn
 
+
 class ResidualBlock(nn.Module):
-    def __init__(self, in_channels, padding_type='', conv_bias=True):
+    def __init__(self, in_channels: int, padding_type: str = '', conv_bias: bool = True) -> None:
         super(ResidualBlock, self).__init__()
         # maybe experiment with reflectionpad2d or replicationpad2d
         # as in the original cyclegan implementation: https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix/blob/master/models/networks.py
@@ -13,17 +15,16 @@ class ResidualBlock(nn.Module):
             nn.InstanceNorm2d(in_channels)
         )
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         return x + self.res_block(x)
 
 
-
 class Discriminator(nn.Module):
-    def __init__(self, input_nc=3, n_layers=3):
+    def __init__(self, input_nc: int = 3, n_layers: int = 3) -> None:
         super(Discriminator, self).__init__()
         # as in the original implementation
         self.discriminator = nn.Sequential(
-            nn.Conv2d(input_nc, 64, kernel_size=4, stride=2, padding=1), # same here about the bias
+            nn.Conv2d(input_nc, 64, kernel_size=4, stride=2, padding=1),  # same here about the bias
             nn.LeakyReLU(0.2, inplace=True),
 
             nn.Conv2d(64, 128, kernel_size=4, stride=2, padding=1),
@@ -41,12 +42,12 @@ class Discriminator(nn.Module):
             nn.Conv2d(512, 1, kernel_size=4, stride=2, padding=1),
         )
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.discriminator(x)
 
 
 class Generator(nn.Module):
-    def __init__(self, num_residual_blocks=6):
+    def __init__(self, num_residual_blocks: int = 6):
         super(Generator, self).__init__()
         self.gen = [
             nn.ReflectionPad2d(3), # 3 input channels since we're dealing with rgb images
@@ -80,5 +81,5 @@ class Generator(nn.Module):
         ]
         self.generator = nn.Sequential(*self.gen)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.generator(x)
