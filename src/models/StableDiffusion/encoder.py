@@ -1,15 +1,11 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
-
-class Attention(nn.Module):
-    def __init__(self):
-        return NotImplementedError
+from attention import SelfAttention
 
 
 class ResidualBlock(nn.Module):
-    def __init__(self, in_channels, out_channels):
+    def __init__(self, in_channels: int, out_channels: int):
         super(ResidualBlock, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -23,7 +19,7 @@ class ResidualBlock(nn.Module):
         )
         self.residual_layer = nn.Conv2d(in_channels, out_channels, kernel_size=1, padding=0)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         res = x
         x = self.res_block(x)
         if self.in_channels == self.out_channels:
@@ -32,12 +28,12 @@ class ResidualBlock(nn.Module):
 
 
 class AttentionBlock(nn.Module):
-    def __init__(self, channels):
+    def __init__(self, channels: int):
         super(AttentionBlock, self).__init__()
         self.group_norm = nn.GroupNorm(32, channels)
-        self.attention = Attention()
+        self.attention = SelfAttention()
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         residue = x
         x = self.group_norm(x)
         batch_size, n_channels, h, w = x.shape
@@ -50,8 +46,9 @@ class AttentionBlock(nn.Module):
 
 
 class VAEEncoder(nn.Module):
-    def __init__(self, in_channels=3, out_channels=128, latent_channels=8, num_blocks=2):
+    def __init__(self, in_channels: int = 3, out_channels: int = 128, latent_dim: int = 8, num_blocks: int = 2):
         super(VAEEncoder, self).__init__()
+        # by the end we have img width / 8 and img height / 8
         self.out_channels = out_channels
         self.encoder_modules = nn.ModuleList([
                 nn.Conv2d(in_channels, out_channels=out_channels, kernel_size=3, stride=2, padding=0),
@@ -73,12 +70,12 @@ class VAEEncoder(nn.Module):
                 ResidualBlock(self.out_channels, self.out_channels),
                 nn.GroupNorm(num_groups=32, num_channels=self.out_channels),
                 nn.SiLU(inplace=True),
-                nn.Conv2d(self.out_channels, latent_channels, kernel_size=3, padding=1),
-                nn.Conv2d(latent_channels, latent_channels, kernel_size=1, padding=0),
+                nn.Conv2d(self.out_channels, latent_dim, kernel_size=3, padding=1),
+                nn.Conv2d(latent_dim, latent_dim, kernel_size=1, padding=0),
             ]
         )
 
-    def reparameterization(self, mean, var):
+    def reparameterization(self, mean: torch.Tensor, var: torch.Tensor) -> torch.Tensor:
         z = torch.randn_like(mean) * var + mean
         return z
 
