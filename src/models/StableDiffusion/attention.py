@@ -21,7 +21,7 @@ class SelfAttention(nn.Module):
         v = v.view(temp_shape).transpose(1, 2)
 
         atn_mat = q @ k.transpose(-1, -2)  # Q * K transposed (B, num_heads, seq_len, dim / num_heads) @ (B, num_heads, dim / num_heads, seq_len) -> (B, num_heads, seq_len, seq_len)
-        # apply causal mask if specified 
+        # apply causal mask if specified
         if mask:
             atn_mask = torch.ones_like(atn_mat, dtype=torch.bool).triu(diagonal=1)
             atn_mat.masked_fill_(atn_mask, float('-inf'))
