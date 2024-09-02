@@ -16,7 +16,8 @@ from torchmetrics.image.lpip import LearnedPerceptualImagePatchSimilarity as LPI
 # from piq import LPIPS # maybe use lpips from here instead
 from fran import Generator, Discriminator
 from datasets.fgnet_loader import FGNETFRANDataset
-from constants import FGNET_IMAGES_DIR
+from datasets.cacd_loader import CACDFRANDataset
+from constants import FGNET_IMAGES_DIR, CACD_META_SEX_ANNOTATED_PATH, CACD_SPLIT_DIR
 from fran_utils import FRANLossLambdaParams
 
 
@@ -91,7 +92,7 @@ class FRAN(L.LightningModule):
             target_img = batch['target_img']
             target_age = batch['target_age']
             output = self.forward(full_input)
-    
+
         predicted = input_img + output
         predicted_norm = self._normalize_output(predicted, torch.min(predicted).item(), torch.max(predicted).item())
         self.logger.experiment.add_image("input", torchvision.utils.make_grid(self._unnormalize_output(input_img[0])), self.current_epoch)
@@ -121,11 +122,13 @@ def main():
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
 
-    dataset = FGNETFRANDataset(FGNET_IMAGES_DIR, transform)
+    meta_path = CACD_META_SEX_ANNOTATED_PATH
+    images_dir_path = CACD_SPLIT_DIR
+    dataset = CACDFRANDataset(meta_path, images_dir_path, transform=transform)
     n_valid_images = 16
     train_size = len(dataset) - n_valid_images
     train_set, valid_set = random_split(dataset, (train_size, n_valid_images))
-    batch_size = 8
+    batch_size = 4
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True, drop_last=True)
     valid_loader = DataLoader(valid_set, batch_size=n_valid_images, shuffle=False, num_workers=8, pin_memory=True)
 
@@ -144,6 +147,7 @@ def main():
     fran_trainer = L.Trainer(
         callbacks=[checkpoint_callback],
         max_epochs=5,
+        max_time='00:24:00:00',
         default_root_dir="../models/fran/",
         logger=logger
         )

@@ -33,3 +33,7 @@ class SelfAttention(nn.Module):
         atn_out = atn_out.transpose(1, 2).reshape((batch_size, seq_len, d_emb))  # back to original shape (x.shape)
         atn_out *= self.output_projection  # multiply by WO matrix
         return atn_out
+
+
+class CrossAttention(nn.Module):
+    ...
