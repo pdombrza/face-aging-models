@@ -11,7 +11,7 @@ class BlurUpsample(nn.Module):
     def __init__(self, blur_kernel_size: Iterable = (3, 3), blur_kernel_sigma: Iterable = (1.5, 1.5), upsample_scale: Iterable = (2, 2)) -> None:
         super(BlurUpsample, self).__init__()
         self.blur_upsample = nn.Sequential(
-            kornia.filters.GaussianBlur2d(kernel_size=blur_kernel_size, sigma=blur_kernel_sigma),
+            kornia.filters.GaussianBlur2d(kernel_size=(3, 3), sigma=(1.5, 1.5)),
             nn.Upsample(scale_factor=upsample_scale, mode='bilinear', align_corners=False)
         )
 
@@ -106,6 +106,7 @@ class Discriminator(nn.Module):
     def __init__(self, in_channels: int = 4, num_channels: int = 64, num_blocks: int = 3, normalization: int = True):
         super(Discriminator, self).__init__()
         self.num_channels = num_channels
+        self.num_blocks = num_blocks
         self.disc = [
             nn.Conv2d(in_channels, self.num_channels, kernel_size=3, stride=1, padding=1),
         ]

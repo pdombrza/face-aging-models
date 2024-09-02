@@ -38,15 +38,17 @@ class FRAN(L.LightningModule):
         input_img = batch['input_img']
         target_img = batch['target_img']
         target_age = batch['target_age']
-        batch_size = full_input.size(0)
+
 
         output = self.generator(full_input)
         predicted = input_img + output
         predicted = self._normalize_output(predicted, torch.min(predicted).item(), torch.max(predicted).item())
         predicted_with_age = torch.cat((input_img, target_age), dim=1)
+        real_fake_loss_h = input_img.shape[2] // (2 ** self.discriminator.num_blocks)
+        real_fake_loss_w = input_img.shape[3] // (2 ** self.discriminator.num_blocks)
 
-        real = torch.ones(full_input.shape[0], 1, input_img.shape[2] // batch_size, input_img.shape[3] // batch_size).to(self.device)
-        fake = torch.zeros(full_input.shape[0], 1, input_img.shape[2] // batch_size, input_img.shape[3] // batch_size).to(self.device)
+        real = torch.ones(full_input.shape[0], 1, real_fake_loss_h, real_fake_loss_w).to(self.device)
+        fake = torch.zeros(full_input.shape[0], 1, real_fake_loss_h, real_fake_loss_w).to(self.device)
 
         # Discriminator losses
         real_loss = self.adversarial_loss(self.discriminator(torch.cat((target_img, target_age), dim=1)), real)
@@ -124,11 +126,12 @@ def main():
 
     meta_path = CACD_META_SEX_ANNOTATED_PATH
     images_dir_path = CACD_SPLIT_DIR
-    dataset = CACDFRANDataset(meta_path, images_dir_path, transform=transform)
+    # dataset = CACDFRANDataset(meta_path, images_dir_path, transform=transform)
+    dataset = FGNETFRANDataset(FGNET_IMAGES_DIR, transform)
     n_valid_images = 16
     train_size = len(dataset) - n_valid_images
     train_set, valid_set = random_split(dataset, (train_size, n_valid_images))
-    batch_size = 4
+    batch_size = 8
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True, drop_last=True)
     valid_loader = DataLoader(valid_set, batch_size=n_valid_images, shuffle=False, num_workers=8, pin_memory=True)
 
@@ -146,7 +149,7 @@ def main():
 
     fran_trainer = L.Trainer(
         callbacks=[checkpoint_callback],
-        max_epochs=5,
+        max_epochs=15,
         max_time='00:24:00:00',
         default_root_dir="../models/fran/",
         logger=logger
