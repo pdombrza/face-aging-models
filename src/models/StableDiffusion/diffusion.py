@@ -58,7 +58,60 @@ class ResidualBlock(nn.Module):
 
 
 class AttentionBlock(nn.Module):
-    ...
+    def __init__(self, n_heads: int, emb_dim: int, context_dim: int = 7680):
+        # transformer-like attention block
+        channels = n_heads * emb_dim
+        self.input_block = nn.Sequential(
+            nn.GroupNorm(32, channels),
+            nn.Conv2d(channels, channels, kernel_size=1, padding=0),
+        )
+        self.first_atn_block = nn.Sequential(
+            nn.LayerNorm(channels),
+            SelfAttention(n_heads, channels, input_projection_bias=False),
+        )
+
+        # second atn block
+        self.layernorm2 = nn.LayerNorm(channels)
+        self.cross_attention = CrossAttention(n_heads, channels, context_dim, input_projection_bias=False)
+
+        # feed forward
+        self.layernorm3 = nn.LayerNorm(channels)
+        self.linear1 = nn.Linear(channels, 4 * channels * 2)
+        self.linear2 = nn.Linear(4 * channels, channels)
+        self.conv_out = nn.Conv2d(channels, channels, kernel_size=1, padding=0)
+
+    def forward(self, x, context):
+        # x: image -> B, N_CHANS, H, W
+        # context: text embedding -> B, seq_len, emb_dim
+        residue_old = x
+
+        x = self.input_block(x)
+
+        batch_size, n_channels, h, w = x.shape
+        x = x.view((batch_size, n_channels, h * w))
+        x = x.transpose(-1, -2)  # B, H*W, N_CHANS
+
+        residue = x
+        x = self.first_atn_block(x)
+        x += residue
+
+        # cross attention
+        residue = x
+        x = self.layernorm2
+        x = self.cross_attention(x, context)
+        x += residue
+
+        residue = x
+        x = self.layernorm3(x)
+        x, gate = self.linear1(x).chunk(2, dim=-1)
+        x *= F.gelu(gate)
+        x = self.linear2(x)
+        x += residue
+
+        x = x.transpose(-1, -2)  # restore back to B, N_CHANS, H*W
+        x = x.view((batch_size, n_channels, h, w))
+        x = self.conv_out(x)
+        return x + residue_old
 
 
 class Upsample(nn.Module):
