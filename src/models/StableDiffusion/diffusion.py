@@ -28,6 +28,7 @@ class AttentionBlock(nn.Module):
 
 class Upsample(nn.Module):
     def __init__(self, channels: int):
+        super(Upsample, self).__init__()
         self.upsample = nn.Sequential(
             nn.Conv2d(channels, channels, kernel_size=3, padding=1),
             nn.Upsample(channels, scale_factor=2),
@@ -111,10 +112,22 @@ class UNet(nn.Module):
             AttentionBlock(self.num_heads, self.emb_dim / 2),
         ])
 
+    def forward(self, x):
+        ...
 
 
 class UNetOutputLayer(nn.Module):
-    ...
+    def __init__(self, in_channels: int, out_channels: int):
+        super(UNetOutputLayer, self).__init__()
+        self.unet_out_block = nn.Sequential(
+            nn.GroupNorm(32, in_channels),
+            nn.SiLU(inplace=True),
+            nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1)
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = self.unet_out_block(x)
+        return x
 
 
 class Diffusion(nn.Module):
