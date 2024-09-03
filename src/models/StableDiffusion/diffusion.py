@@ -7,6 +7,7 @@ from attention import SelfAttention, CrossAttention
 
 class TimeEmbedding(nn.Module):
     def __init__(self, emb_dim):
+        super(TimeEmbedding, self).__init__()
         self.t_emb = nn.Sequential(
             nn.Linear(emb_dim, 4 * emb_dim),
             nn.SiLU(inplace=True),
@@ -19,7 +20,41 @@ class TimeEmbedding(nn.Module):
 
 
 class ResidualBlock(nn.Module):
-    ...
+    def __init__(self, in_channels: int, out_channels: int, time_emb_dim: int = 1280):
+        super(ResidualBlock, self).__init__()
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.feature_block = nn.Sequential(
+            nn.GroupNorm(32, in_channels),
+            nn.SiLU(inplace=True),
+            nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
+        )
+
+        self.time_block = nn.Sequential(
+            nn.SiLU(inplace=True),
+            nn.Linear(time_emb_dim, out_channels),
+        )
+
+        self.time_feature_block = nn.Sequential(
+            nn.GroupNorm(32, out_channels),
+            nn.SiLU(inplace=True),
+            nn.Conv2d(out_channels, out_channels, kernel_size=1, padding=0)
+        )
+
+        self.residual_layer = nn.Conv2d(in_channels, out_channels, kernel_size=1, padding=0)
+
+    def forward(self, x, time):
+        residue = x
+        x = self.feature_block(x)
+        time = self.time_block(time)
+        time_feature = x + time.unsqueeze(-1).unsqueeze(-1)
+        time_feature = self.time_feature_block(time_feature)
+        if self.in_channels == self.out_channels:
+            time_feature += residue
+        else:
+            time_feature += self.residual_layer(residue)
+
+        return time_feature
 
 
 class AttentionBlock(nn.Module):
