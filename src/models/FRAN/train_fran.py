@@ -149,7 +149,7 @@ def main():
 
     fran_trainer = L.Trainer(
         callbacks=[checkpoint_callback],
-        max_epochs=15,
+        max_epochs=30,
         max_time='00:24:00:00',
         default_root_dir="../models/fran/",
         logger=logger

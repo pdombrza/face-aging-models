@@ -27,7 +27,15 @@ class AttentionBlock(nn.Module):
 
 
 class Upsample(nn.Module):
-    ...
+    def __init__(self, channels: int):
+        self.upsample = nn.Sequential(
+            nn.Conv2d(channels, channels, kernel_size=3, padding=1),
+            nn.Upsample(channels, scale_factor=2),
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = self.upsample(x)
+        return x
 
 
 class UNet(nn.Module):
