@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from attention import SelfAttention, CrossAttention
+from util import SwitchBlockWrapper
 
 
 class TimeEmbedding(nn.Module):
@@ -157,13 +158,21 @@ class UNet(nn.Module):
             ResidualBlock(self.down_ch, self.down_ch),
         ]
         # B, 1280, H / 64, W / 64, emb_dim = 160
+        
+        # Wrap with switch block
+        for layer in self.down_channels:
+            layer = SwitchBlockWrapper(layer)
 
         self.mid_ch = self.down_ch
-        self.mid_channels = nn.ModuleList([
+        self.mid_channels = nn.Sequential(
             ResidualBlock(self.mid_ch, self.mid_ch),
             AttentionBlock(self.num_heads, self.emb_dim),
             ResidualBlock(self.mid_ch, self.mid_ch),
-        ])
+        )
+
+        # Wrap with switch block
+        for layer in self.mid_channels:
+            layer = SwitchBlockWrapper(layer)
 
         # skip connection from down channels + output from mid channels = 2560 channels
         self.up_ch = self.mid_ch + self.down_ch  # 2560
@@ -200,8 +209,23 @@ class UNet(nn.Module):
             AttentionBlock(self.num_heads, self.emb_dim / 2),
         ])
 
-    def forward(self, x):
-        ...
+        # Wrap with switch block
+        for layer in self.up_channels:
+            layer = SwitchBlockWrapper(layer)
+
+    def forward(self, x: torch.Tensor, context: torch.Tensor, time_emb: torch.Tensor) -> torch.Tensor:
+        skip_connections = []
+        for layer in self.down_channels:
+            x = layer(x, context, time_emb)
+            skip_connections.append(x)
+
+        x = self.mid_channels(x, context, time_emb)
+
+        for layer in self.up_channels:
+            x = torch.cat((x, skip_connections.pop()), dim=1)
+            x = layer(x, context, time_emb)
+
+        return x
 
 
 class UNetOutputLayer(nn.Module):
@@ -219,11 +243,11 @@ class UNetOutputLayer(nn.Module):
 
 
 class Diffusion(nn.Module):
-    def __init__(self, t_emb_dim: int):
+    def __init__(self, t_emb_dim: int, in_channels: int = 4, down_channels: int = 320, atn_num_heads: int = 8, atn_emb_dim: int = 40):
         super(Diffusion, self).__init__()
         self.timestemp_embed = TimeEmbedding(t_emb_dim)
-        self.unet = UNet()
-        self.out = UNetOutputLayer()
+        self.unet = UNet(in_channels, down_channels, atn_num_heads, atn_emb_dim)
+        self.out = UNetOutputLayer(in_channels=down_channels, out_channels=in_channels)
 
     def forward(self, x: torch.Tensor, context: torch.Tensor, timestep: torch.Tensor) -> torch.Tensor:
         # x : B, n chans(4 chans in encoder output and this takes encoder output), H / 8, W / 8
