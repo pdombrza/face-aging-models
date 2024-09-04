@@ -14,11 +14,11 @@ from lightning.pytorch.callbacks import ModelCheckpoint
 from torchmetrics.image.lpip import LearnedPerceptualImagePatchSimilarity as LPIPS
 
 # from piq import LPIPS # maybe use lpips from here instead
-from fran import Generator, Discriminator
-from datasets.fgnet_loader import FGNETFRANDataset
-from datasets.cacd_loader import CACDFRANDataset
-from constants import FGNET_IMAGES_DIR, CACD_META_SEX_ANNOTATED_PATH, CACD_SPLIT_DIR
-from fran_utils import FRANLossLambdaParams
+from src.models.FRAN.fran import Generator, Discriminator
+from src.models.FRAN.fran_utils import FRANLossLambdaParams
+from src.datasets.fgnet_loader import FGNETFRANDataset
+from src.datasets.cacd_loader import CACDFRANDataset
+from src.constants import FGNET_IMAGES_DIR, CACD_META_SEX_ANNOTATED_PATH, CACD_SPLIT_DIR
 
 
 class FRAN(L.LightningModule):

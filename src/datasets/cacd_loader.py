@@ -10,7 +10,7 @@ from torch.utils.data import Dataset, DataLoader
 import torchvision.transforms as transforms
 from torchvision.io import ImageReadMode, read_image
 import pandas as pd
-from constants import CACD_META_SEX_ANNOTATED_PATH, CACD_SPLIT_DIR
+from src.constants import CACD_META_SEX_ANNOTATED_PATH, CACD_SPLIT_DIR
 
 
 def gen_cacd_img_pairs_fran(meta_df: pd.DataFrame) -> list[tuple]:
@@ -59,6 +59,14 @@ class CACDCycleGANDataset(Dataset):
         self.img_root_dir = img_root_dir
         self.young_images = self.metadata[(self.metadata['age'] >= 20) & (self.metadata['age'] <= 30)]
         self.old_images = self.metadata[(self.metadata['age'] >= 50) & (self.metadata['age'] <= 60)]
+        if transform is None:
+            self.transform = transforms.Compose([
+                transforms.ConvertImageDtype(dtype=torch.float),
+                transforms.Resize((160, 160)),
+                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+            ])
+        else:
+            self.transform = transform
 
     def __len__(self):
         return min(len(self.young_images), len(self.old_images))
@@ -74,9 +82,8 @@ class CACDCycleGANDataset(Dataset):
         old_dir_path = os.path.join(self.img_root_dir, old_celeb_name)
         old_image = read_image(os.path.join(old_dir_path, old_img_name), mode=ImageReadMode.RGB)
 
-        if self.transform is not None:
-            young_image = self.transform(young_image)
-            old_image = self.transform(old_image)
+        young_image = self.transform(young_image)
+        old_image = self.transform(old_image)
 
         return {
             "young_image": young_image,

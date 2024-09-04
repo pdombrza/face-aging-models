@@ -20,7 +20,7 @@ def train(
     time_limit_s: int | None = None,
     n_valid_images: int = 16,
     epochs: int = 10,
-    log_dir: Path | str = Path("../models/fran/tb_logs")
+    log_dir: Path | str = Path("models/fran/tb_logs")
 ):
     if dataset not in ("cacd", "fgnet"):
         raise ValueError("Invalid dataset. Available: 'cacd', 'fgnet'.")
@@ -66,8 +66,8 @@ def main():
     parser = ArgumentParser(description="Train FRAN model.")
     parser.add_argument("--dataset", help="Dataset to use for training. Possible options: 'cacd', 'fgnet'.", required=True)
     parser.add_argument("--maxtime", type=int, help="Time limit for training in seconds. Default: 86400.", required=False)
-    parser.add_argument("--n_valid_images", type=int, help="Number of validation images. Default: 16", required=False)
-    parser.add_argument("--epochs", type=int, help="Number of training epochs.", required=False)
+    parser.add_argument("--n_valid_images", type=int, help="Number of validation images. Default: 16", required=False, default=16)
+    parser.add_argument("--epochs", type=int, help="Number of training epochs.", required=False, default=10)
     parser.add_argument("--lambda_l1", type=float, help="Lambda param for L1 Loss. Default: 1.0", required=False, default=1.0)
     parser.add_argument("--lambda_adv", type=float, help="Lambda param for adversarial Loss. Default: 0.05", required=False, default=0.05)
     parser.add_argument("--lambda_lpips", type=float, help="Lambda param for LPIPS Loss. Default: 1.0", required=False, default=1.0)
@@ -76,8 +76,10 @@ def main():
     args = parser.parse_args()
 
     loss_params = FRANLossLambdaParams(args.lambda_l1, args.lambda_lpips, args.lambda_adv)
-    model, trainer = train(args.dataset, loss_params, args.maxtime, args.n_valid_images, args.epochs, args.log_dir)
-    trainer.save_checkpoint(args.save)
+    save_path = args.save if args.save is not None else Path("models/fran/")
+    log_dir = args.log_dir if args.log_dir is not None else Path("models/fran/tb_logs")
+    model, trainer = train(args.dataset, loss_params, args.maxtime, args.n_valid_images, args.epochs, log_dir)
+    trainer.save_checkpoint(save_path)
 
 
 if __name__ == "__main__":

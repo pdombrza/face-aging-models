@@ -24,13 +24,19 @@ from datasets.cacd_loader import CACDCycleGANDataset
 
 class CycleGAN(L.LightningModule):
     # combines the generators and discriminators
-    def __init__(self, generator: Generator, discriminator: Discriminator, optimizer_params: dict, loss_params: CycleGANLossLambdaParams) -> None:
+    def __init__(
+        self,
+        optimizer_params: dict,
+        generator: Generator | None = None,
+        discriminator: Discriminator | None = None,
+        loss_params: CycleGANLossLambdaParams | None = None,
+    ) -> None:
         super(CycleGAN, self).__init__()
-        self.g = generator
-        self.f = generator
-        self.d_x = discriminator
-        self.d_y = discriminator
-        self.loss_params = loss_params
+        self.g = generator if generator is not None else Generator()
+        self.f = generator if generator is not None else Generator()
+        self.d_x = discriminator if discriminator is not None else Discriminator()
+        self.d_y = discriminator if discriminator is not None else Discriminator()
+        self.loss_params = loss_params if loss_params is not None else CycleGANLossLambdaParams()
         self.adversarial_loss = nn.MSELoss()
         self.cycle_consistency_loss = nn.L1Loss()
         self.identity_loss = nn.L1Loss()
