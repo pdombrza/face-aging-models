@@ -91,6 +91,14 @@ class CACDFRANDataset(Dataset):
         self.transform = transform
         self.img_root_dir = img_root_dir
         self.image_pairs = gen_cacd_img_pairs_fran(self.metadata)
+        if transform is None:
+            self.transform = transforms.Compose([
+                transforms.ConvertImageDtype(dtype=torch.float),
+                transforms.Resize((160, 160)),
+                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+            ])
+        else:
+            self.transform = transform
 
     def __len__(self):
         return len(self.image_pairs)

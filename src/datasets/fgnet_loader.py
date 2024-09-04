@@ -96,8 +96,15 @@ class FGNETCycleGANDataset(Dataset):
 class FGNETFRANDataset(Dataset):
     def __init__(self, images_path, transform=None):
         self.images_path = images_path
-        self.transform = transform
         self.image_pairs = gen_fgnet_img_pairs_fran(images_path)
+        if transform is None:
+            self.transform = transforms.Compose([
+                transforms.ConvertImageDtype(dtype=torch.float),
+                transforms.Resize((160, 160)),
+                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+            ])
+        else:
+            self.transform = transform
 
     def __len__(self):
         return len(self.image_pairs)
@@ -107,9 +114,8 @@ class FGNETFRANDataset(Dataset):
         input_image = read_image(os.path.join(self.images_path, image_pair[0]), mode=ImageReadMode.RGB)
         target_image = read_image(os.path.join(self.images_path, image_pair[1]), mode=ImageReadMode.RGB)
 
-        if self.transform is not None:
-            input_image = self.transform(input_image)
-            target_image = self.transform(target_image)
+        input_image = self.transform(input_image)
+        target_image = self.transform(target_image)
 
         input_age = int(image_pair[0][4:6])
         target_age = int(image_pair[1][4:6])

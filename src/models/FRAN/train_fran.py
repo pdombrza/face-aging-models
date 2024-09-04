@@ -22,11 +22,16 @@ from fran_utils import FRANLossLambdaParams
 
 
 class FRAN(L.LightningModule):
-    def __init__(self, generator: Generator, discriminator: Discriminator, loss_params: FRANLossLambdaParams) -> None:
+    def __init__(
+        self,
+        generator: Generator | None = None,
+        discriminator: Discriminator | None = None,
+        loss_params: FRANLossLambdaParams | None = None,
+    ) -> None:
         super(FRAN, self).__init__()
-        self.generator = generator
-        self.discriminator = discriminator
-        self.loss_params = loss_params
+        self.generator = generator if generator is not None else Generator()
+        self.discriminator = discriminator if discriminator is not None else Discriminator()
+        self.loss_params = loss_params if loss_params is not None else FRANLossLambdaParams()
         self.l1_loss = nn.L1Loss()  # maybe dependency injection
         self.adversarial_loss = nn.BCEWithLogitsLoss()
         self.perceptual_loss = LPIPS(net_type='vgg')
@@ -38,7 +43,6 @@ class FRAN(L.LightningModule):
         input_img = batch['input_img']
         target_img = batch['target_img']
         target_age = batch['target_age']
-
 
         output = self.generator(full_input)
         predicted = input_img + output
@@ -149,13 +153,13 @@ def main():
 
     fran_trainer = L.Trainer(
         callbacks=[checkpoint_callback],
-        max_epochs=1,
-        max_time='00:24:00:00',
+        max_epochs=15,
+        max_time='00:03:00:00',
         default_root_dir="../models/fran/",
         logger=logger
         )
     fran_trainer.fit(fran_model, train_loader, valid_loader)
-    fran_trainer.save_checkpoint("../models/fran_fin")
+    fran_trainer.save_checkpoint("../models/fran/fran_fin")
 
 
 if __name__ == "__main__":
