@@ -158,7 +158,7 @@ class UNet(nn.Module):
             ResidualBlock(self.down_ch, self.down_ch),
         ]
         # B, 1280, H / 64, W / 64, emb_dim = 160
-        
+
         # Wrap with switch block
         for layer in self.down_channels:
             layer = SwitchBlockWrapper(layer)

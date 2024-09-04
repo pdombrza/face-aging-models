@@ -8,7 +8,7 @@ import torch.nn.functional as F
 
 
 class BlurUpsample(nn.Module):
-    def __init__(self, blur_kernel_size: Iterable = (3, 3), blur_kernel_sigma: Iterable = (1.5, 1.5), upsample_scale: Iterable = (2, 2)) -> None:
+    def __init__(self, blur_kernel_size: Iterable = (3, 3), blur_kernel_sigma: Iterable = (1.5, 1.5), upsample_scale: int = 2) -> None:
         super(BlurUpsample, self).__init__()
         self.blur_upsample = nn.Sequential(
             kornia.filters.GaussianBlur2d(kernel_size=(3, 3), sigma=(1.5, 1.5)),

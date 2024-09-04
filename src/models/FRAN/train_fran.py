@@ -98,8 +98,8 @@ class FRAN(L.LightningModule):
         predicted = input_img + output
         predicted_norm = self._normalize_output(predicted, torch.min(predicted).item(), torch.max(predicted).item())
         self.logger.experiment.add_image("input", torchvision.utils.make_grid(self._unnormalize_output(input_img[0])), self.current_epoch)
-        self.logger.experiment.add_image(f"output_{target_age}", torchvision.utils.make_grid(self._unnormalize_output(predicted_norm[0])), self.current_epoch)
-        # self.logger.experiment.add_image(f"target_{target_age}", torchvision.utils.make_grid(self._unnormalize_output(target_img[0])), self.current_epoch)
+        self.logger.experiment.add_image(f"output_{int(target_age[0][0][0][0].item() * 100)}", torchvision.utils.make_grid(self._unnormalize_output(predicted_norm[0])), self.current_epoch)
+        self.logger.experiment.add_image(f"target_{int(target_age[0][0][0][0].item() * 100)}", torchvision.utils.make_grid(self._unnormalize_output(target_img[0])), self.current_epoch)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.generator(x)
