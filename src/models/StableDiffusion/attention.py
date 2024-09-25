@@ -68,4 +68,5 @@ class CrossAttention(nn.Module):
         # reshape back to original size
         atn_out = atn_out.transpose(1, 2).contiguous()
         atn_out = atn_out.view((batch_size, seq_len, d_emb))
+        atn_out = self.output_projection(atn_out)
         return atn_out
