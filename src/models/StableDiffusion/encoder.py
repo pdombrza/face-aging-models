@@ -92,6 +92,8 @@ class VAEEncoder(nn.Module):
         stdev = torch.sqrt(variance)
         x = self.reparameterization(mean, stdev)
 
+        x = mean + stdev * noise
+
         x *= 0.18125  # magic constant from original paper
 
         return x
