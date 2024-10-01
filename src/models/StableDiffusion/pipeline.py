@@ -13,7 +13,7 @@ def generate(
         prompt: str,
         uncond_prompt: str,
         input_image=None,
-        strength=0.8,
+        strength=0.8, # how much we want to pay attention to the original image (in image-to-image)
         classifier_free_guidance=True,
         cfg_scale=7.5,
         sampler="ddpm",
@@ -110,3 +110,36 @@ def generate(
             if classifier_free_guidance:
                 output_cond, output_uncond = model_out.chunk(2)  # split by 0th dim
                 model_out = cfg_scale * (output_cond - output_uncond) + output_uncond
+
+            # remove noise predicted by UNet
+            latent_image = sampler.step(timestep, latent_image, model_out)
+
+        to_idle(diffusion)
+
+        # VAE decoder
+        decoder = pretrained_models["decoder"]
+        out_image = decoder(latent_image)
+
+        to_idle(decoder)
+
+        out_image_rescaled = rescale(out_image, (-1, 1), (0, 255))
+        out_image_rescaled.permute(0, 2, 3, 1) # back to B_Size, H, W, Channels
+        out_image_rescaled.to("cpu", torch.uint8).numpy() # out as np array
+        return out_image_rescaled[0]
+
+def rescale(x: torch.Tensor, old_range: tuple[int, int], new_range: tuple[int, int], clamp: bool=False) -> torch.Tensor:
+    old_min, old_max = old_range
+    new_min, new_max = new_range
+    scale_fac = (new_max - new_min) / (old_max - old_min)
+    x -= old_min
+    x *= scale_fac
+    x += new_min
+    if clamp:
+        x = x.clamp(new_min, new_max)
+    return x
+
+def get_time_embedding(timestep):
+    # transformer positional encoding formula
+    frequencies = torch.pow(10000, -torch.arange(0, 160, dtype=torch.float32) / 160)
+    x = torch.tensor([timestep], dtype=torch.float32).unsqueeze() * frequencies[None]
+    return torch.cat([torch.cos(x), torch.sin(x)], dim=-1)
