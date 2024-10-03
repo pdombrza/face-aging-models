@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 from tqdm import tqdm
-from scheduler import DDPM
+from src.models.StableDiffusion.sampler import DDPM
 
 IMG_WIDTH = 512
 IMG_HEIGHT = 512
