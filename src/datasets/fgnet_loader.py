@@ -100,6 +100,7 @@ class FGNETCycleGANDataset(Dataset):
 
 class FGNETFRANDataset(Dataset):
     def __init__(self, images_path, transform=None):
+        super().__init__()
         self.images_path = images_path
         self.image_pairs = gen_fgnet_img_pairs_fran(images_path)
         if transform is None:

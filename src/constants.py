@@ -1,6 +1,6 @@
 # ======================= BASE DATA PATHS =======================
-DATA_RAW_BASE_PATH = "data/raw/"
-DATA_INTERIM_BASE_PATH = "data/interim/"
+DATA_RAW_BASE_PATH = "../data/raw/"
+DATA_INTERIM_BASE_PATH = "../data/interim/"
 
 # ========================= CACD PATHS ==========================
 CACD_IMAGES_PATH = f"{DATA_RAW_BASE_PATH}CACD2000"
@@ -19,3 +19,8 @@ CACD_CSV_PATH = f"{DATA_INTERIM_BASE_PATH}cacd_meta/CACD_features.csv"
 # ========================= FGNET PATHS =========================
 FGNET_IMAGES_DIR = f"{DATA_RAW_BASE_PATH}FGNET/FGNET/images"
 FGNET_INDIVIDUALS_DIR = f"{DATA_RAW_BASE_PATH}FGNET/FGNET/individuals"
+
+
+# ======================= SYNTHETIC PATHS =======================
+SYNTHETIC_IMAGES_DIR = f"{DATA_RAW_BASE_PATH}synthetic_images"
+SYNTHETIC_IMAGES_FULL = f"{DATA_RAW_BASE_PATH}synthetic_images"

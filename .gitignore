@@ -4,6 +4,7 @@ __pycache__
 
 FGNET
 CACD2000
+synthetic_images
 cacd_split
 cacd_split_no_multiple
 *.mat
