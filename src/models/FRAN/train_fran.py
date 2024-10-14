@@ -13,7 +13,7 @@ from lightning.pytorch.loggers import TensorBoardLogger
 from lightning.pytorch.callbacks import ModelCheckpoint
 from torchmetrics.image.lpip import LearnedPerceptualImagePatchSimilarity as LPIPS
 
-# from piq import LPIPS # maybe use lpips from here instead
+#from piq import LPIPS # maybe use lpips from here instead
 from src.models.FRAN.fran import Generator, Discriminator
 from src.models.FRAN.fran_utils import FRANLossLambdaParams
 from src.datasets.fgnet_loader import FGNETFRANDataset
@@ -35,10 +35,15 @@ class FRAN(L.LightningModule):
         self.l1_loss = nn.L1Loss()  # maybe dependency injection
         self.adversarial_loss = nn.BCEWithLogitsLoss()
         self.perceptual_loss = LPIPS(net_type='vgg')
+        #self.perceptual_loss = LPIPS()
         self.automatic_optimization = False
 
     def training_step(self, batch: torch.Tensor, batch_idx: int) -> None:
         gen_optimizer, dis_optimizer = self.optimizers()
+
+        gen_optimizer.zero_grad()
+        dis_optimizer.zero_grad()
+
         full_input = batch['input']
         input_img = batch['input_img']
         target_img = batch['target_img']
@@ -56,7 +61,7 @@ class FRAN(L.LightningModule):
 
         # Discriminator losses
         real_loss = self.adversarial_loss(self.discriminator(torch.cat((target_img, target_age), dim=1)), real)
-        fake_loss = self.adversarial_loss(self.discriminator(predicted_with_age), fake)
+        fake_loss = self.adversarial_loss(self.discriminator(predicted_with_age.detach()), fake)
 
         disc_loss = (real_loss + fake_loss) / 2.0
 
