@@ -52,7 +52,7 @@ class DownBlock(nn.Module):
             nn.BatchNorm2d(out_channels),
             nn.LeakyReLU(0.2, inplace=True),
             nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(out_channels, out_channels),
+            nn.BatchNorm2d(out_channels),
             nn.LeakyReLU(0.2, inplace=True),
         )
 
@@ -111,14 +111,14 @@ class Discriminator(nn.Module):
             nn.Conv2d(in_channels, self.num_channels, kernel_size=3, stride=1, padding=1),
         ]
         if normalization:
-            self.disc.append(nn.InstanceNorm2d(self.num_channels))
+            self.disc.append(nn.BatchNorm2d(self.num_channels))
         self.disc.append(nn.LeakyReLU(0.2, inplace=True))
         self.disc.append(kornia.filters.MaxBlurPool2D(kernel_size=3))
 
-        for i in range(num_blocks-1):
+        for i in range(num_blocks):
             layers = [nn.Conv2d(self.num_channels, 2 * self.num_channels, kernel_size=3, stride=1, padding=1)]
             if normalization:
-                layers.append(nn.InstanceNorm2d(2 * self.num_channels))
+                layers.append(nn.BatchNorm2d(2 * self.num_channels))
             layers.append(nn.LeakyReLU(0.2, inplace=True))
             if i != num_blocks - 1:
                 layers.append(kornia.filters.MaxBlurPool2D(kernel_size=3))
