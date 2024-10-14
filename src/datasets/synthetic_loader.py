@@ -9,7 +9,7 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 import torchvision.transforms as transforms
 from torchvision.io import ImageReadMode, read_image
-from src.constants import SYNTHETIC_IMAGES_FULL
+from constants import SYNTHETIC_IMAGES_FULL
 
 TARGET_AGES = [13, 18, 23, 28, 33, 38, 43, 48, 53, 58, 63, 68, 73, 78, 83]
 
@@ -40,7 +40,9 @@ class SynthFRANDataset(Dataset):
                 transforms.Resize((160, 160)),
                 transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
             ])
+            self.custom_transforms = False
         else:
+            self.custom_transforms = True # this is not very good
             self.transform = transform
 
     def __len__(self):
@@ -51,8 +53,13 @@ class SynthFRANDataset(Dataset):
         input_image = read_image(os.path.join(self.images_path, image_pair[0]), mode=ImageReadMode.RGB)
         target_image = read_image(os.path.join(self.images_path, image_pair[1]), mode=ImageReadMode.RGB)
 
-        input_image = self.transform(input_image)
-        target_image = self.transform(target_image)
+
+        if self.custom_transforms is True:
+            input_image = self.transform(input_image).squeeze()
+            target_image = self.transform(target_image, params=self.transform._params).squeeze()
+        else:
+            input_image = self.transform(input_image)
+            target_image = self.transform(target_image)
 
         input_age = int(image_pair[0][13:15])
         target_age = int(image_pair[1][13:15])
@@ -71,21 +78,30 @@ class SynthFRANDataset(Dataset):
 
 def main():
     images_path = SYNTHETIC_IMAGES_FULL
-    transform = transforms.Compose(
-        [
-            transforms.ConvertImageDtype(dtype=torch.float),
-            transforms.Resize((256, 256)),
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-        ]
+    import kornia
+    from kornia.augmentation import AugmentationSequential
+    transform = AugmentationSequential(
+        transforms.ConvertImageDtype(dtype=torch.float),
+        kornia.augmentation.RandomCrop((256, 256)),
+        kornia.augmentation.ColorJitter(p=0.5),
+        kornia.augmentation.RandomBoxBlur(p=0.1),
+        kornia.augmentation.RandomBrightness(p=0.5),
+        kornia.augmentation.RandomContrast(p=0.5),
+        kornia.augmentation.RandomAffine(degrees=(-30, 30), scale=(0.5, 1.5), p=0.6),
+        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+        same_on_batch=False,
     )
 
     dataset = SynthFRANDataset(images_path, transform=transform)
 
     dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
     res = next(iter(dataloader))
-    print(torch.min(res["input"]))
-    # image_pairs = gen_fgnet_img_pairs_fran(images_path)
-    # print(image_pairs)
+    print(res)
+    # print(torch.min(res["input"]))
+    # image_pairs = gen_synthetic_img_pairs_fran(images_path)
+    # for image in image_pairs:
+    #     if image[0][4:8] == '1868':
+    #         print(image)
 
 
 if __name__ == "__main__":
