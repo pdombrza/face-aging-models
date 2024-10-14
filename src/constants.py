@@ -23,4 +23,4 @@ FGNET_INDIVIDUALS_DIR = f"{DATA_RAW_BASE_PATH}FGNET/FGNET/individuals"
 
 # ======================= SYNTHETIC PATHS =======================
 SYNTHETIC_IMAGES_DIR = f"{DATA_RAW_BASE_PATH}synthetic_images"
-SYNTHETIC_IMAGES_FULL = f"{DATA_RAW_BASE_PATH}synthetic_images"
+SYNTHETIC_IMAGES_FULL = f"{DATA_INTERIM_BASE_PATH}synthetic_images_full"
