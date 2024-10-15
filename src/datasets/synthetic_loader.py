@@ -9,7 +9,7 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 import torchvision.transforms as transforms
 from torchvision.io import ImageReadMode, read_image
-from constants import SYNTHETIC_IMAGES_FULL
+from src.constants import SYNTHETIC_IMAGES_FULL
 
 TARGET_AGES = [13, 18, 23, 28, 33, 38, 43, 48, 53, 58, 63, 68, 73, 78, 83]
 
@@ -95,8 +95,8 @@ def main():
     dataset = SynthFRANDataset(images_path, transform=transform)
 
     dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
-    res = next(iter(dataloader))
-    print(res)
+    # res = next(iter(dataloader))
+    # print(res)
     # print(torch.min(res["input"]))
     # image_pairs = gen_synthetic_img_pairs_fran(images_path)
     # for image in image_pairs:
