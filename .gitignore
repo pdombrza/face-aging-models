@@ -9,6 +9,7 @@ synthetic_images_full
 cacd_split
 cacd_split_no_multiple
 *.ckpt
+*.png
 *.mat
 *.csv
 *.zip

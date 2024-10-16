@@ -26,13 +26,13 @@ def main():
     input_age = 28
     transform = transforms.Compose([
         transforms.ConvertImageDtype(dtype=torch.float),
-        transforms.ToTensor(),
+        transforms.Resize((160, 160)),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
     ])
     input_image = 'data/interim/synthetic_images_full/seed0002.png_28.jpg'
-    input_image_pil = Image.open(input_image)
+    input_image_pil = Image.open(input_image).resize((160, 160))
 
-    input_image_tensor = read_image(input_image, mode=ImageReadMode.RGB)
+    input_image_tensor = transform(read_image(input_image, mode=ImageReadMode.RGB))
     input_age_embedding = torch.full((1, input_image_tensor.shape[1], input_image_tensor.shape[2]), input_age / 100)
     target_age_embedding = torch.full((1, input_image_tensor.shape[1], input_image_tensor.shape[2]), target_age / 100)
 
@@ -42,14 +42,21 @@ def main():
     with torch.no_grad():
         output = generator_model(input_tensor.unsqueeze(0).to(device))
 
+    # print(output)
     np_test = np.array(input_image_pil)
 
-    new_image = (output.squeeze(0).cpu().permute(1, 2, 0).numpy() * 255 + np.array(input_image_pil)).astype('uint8')
+    new_image_out = output.squeeze(0).cpu().permute(1, 2, 0).numpy()
+    min_val, max_val = new_image_out.min(), new_image_out.max()
+    new_image_normalized  = 255 * (new_image_out - min_val) / (max_val - min_val)
+    new_image_normalized = new_image_normalized.astype('uint8')
+    print(new_image_normalized.shape)
 
-    sample_image = np.array(Image.fromarray(new_image).resize((np_test.shape[1], np_test.shape[0]))).astype('uint8')
-    return sample_image
+    # new_image = (new_image_normalized + np.array(input_image_pil)).astype('uint8')
 
-
+    sample_image = Image.fromarray(new_image_normalized)
+    input_image_pil.save("sample_image28.png", "PNG")
+    sample_image.save("sample_image88.png", "PNG")
+    # return
 
 
 if __name__ == "__main__":
