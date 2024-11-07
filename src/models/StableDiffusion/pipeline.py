@@ -105,7 +105,7 @@ def generate(
                 model_in = model_in.repeat(2, 1, 1, 1)
 
             # noise predicted by UNet
-            model_out = diffusion(model_in, context, time_embedding)
+            model_out = diffusion(model_in, context, t_emb)
 
             if classifier_free_guidance:
                 output_cond, output_uncond = model_out.chunk(2)  # split by 0th dim

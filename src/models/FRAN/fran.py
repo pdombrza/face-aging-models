@@ -39,7 +39,6 @@ class UpBlock(nn.Module):
         delta_width = x_skip_conn.size(3) - x.size(3)  # size(3) since we have B x C x H x W
         x = F.pad(x, (delta_width // 2, delta_width - delta_width // 2, delta_height // 2, delta_height - delta_height // 2)) # tuple left, right, top, bottom
         x = torch.cat([x, x_skip_conn], dim=1)
-        # print("fin x:", x.shape)
         return self.up_block(x)
 
 

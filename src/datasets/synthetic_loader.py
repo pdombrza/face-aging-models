@@ -6,10 +6,11 @@ import os
 from itertools import permutations
 from PIL import Image
 import torch
+from kornia.augmentation import AugmentationSequential
 from torch.utils.data import Dataset, DataLoader
 import torchvision.transforms as transforms
 from torchvision.io import ImageReadMode, read_image
-from src.constants import SYNTHETIC_IMAGES_FULL
+from constants import SYNTHETIC_IMAGES_FULL
 
 TARGET_AGES = [13, 18, 23, 28, 33, 38, 43, 48, 53, 58, 63, 68, 73, 78, 83]
 
@@ -40,9 +41,7 @@ class SynthFRANDataset(Dataset):
                 transforms.Resize((160, 160)),
                 transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
             ])
-            self.custom_transforms = False
         else:
-            self.custom_transforms = True # this is not very good
             self.transform = transform
 
     def __len__(self):
@@ -54,9 +53,10 @@ class SynthFRANDataset(Dataset):
         target_image = read_image(os.path.join(self.images_path, image_pair[1]), mode=ImageReadMode.RGB)
 
 
-        if self.custom_transforms is True:
+        if isinstance(self.transform, AugmentationSequential) is True:
             input_image = self.transform(input_image).squeeze()
             target_image = self.transform(target_image, params=self.transform._params).squeeze()
+            print("kornia")
         else:
             input_image = self.transform(input_image)
             target_image = self.transform(target_image)
