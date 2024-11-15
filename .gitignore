@@ -10,6 +10,7 @@ cacd_split
 cacd_split_no_multiple
 *.ckpt
 *.png
+*.jpeg
 *.mat
 *.csv
 *.zip
