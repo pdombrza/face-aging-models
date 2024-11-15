@@ -52,6 +52,7 @@ class ResnetBlock(nn.Module):
 
 
 class UNet(nn.Module):
+    # https://arxiv.org/pdf/2104.05358 [Figure 4.],
     def __init__(self, in_channels: int = 3, t_emb_dim: int = 256):
         super(UNet, self).__init__()
         self.time_emb_mlp_layer = nn.Sequential(
@@ -76,28 +77,52 @@ class UNet(nn.Module):
             nn.ReLU(inplace=True),
             nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3, stride=2, padding=1),
             ResnetBlock(in_channels=512, out_channels=512, t_emb_dim=t_emb_dim),
+            nn.BatchNorm2d(512),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, stride=1, padding=1),
             ResnetBlock(in_channels=512, out_channels=512, t_emb_dim=t_emb_dim),
+            nn.BatchNorm2d(512),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, stride=1, padding=1),
         ])
 
         self.mid_ch = nn.ModuleList([
             ResnetBlock(in_channels=512, out_channels=512, t_emb_dim=t_emb_dim),
+            nn.BatchNorm2d(512),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, stride=1, padding=1),
         ])
 
         self.up_ch = nn.ModuleList([
             ResnetBlock(in_channels=512, out_channels=512, t_emb_dim=t_emb_dim),
+            nn.BatchNorm2d(512),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, stride=1, padding=1),
             ResnetBlock(in_channels=1024, out_channels=1024, t_emb_dim=t_emb_dim),
+            nn.BatchNorm2d(1024),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=1024, out_channels=1024, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(1024),
             nn.ReLU(inplace=True),
             nn.ConvTranspose2d(in_channels=1024, out_channels=512, kernel_size=3, stride=2, padding=1),
             ResnetBlock(in_channels=1024, out_channels=1024, t_emb_dim=t_emb_dim),
             nn.BatchNorm2d(1024),
             nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=1024, out_channels=1024, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(1024),
+            nn.ReLU(inplace=True),
             nn.ConvTranspose2d(in_channels=1024, out_channels=256, kernel_size=3, stride=2, padding=1),
             ResnetBlock(in_channels=512, out_channels=512, t_emb_dim=t_emb_dim),
             nn.BatchNorm2d(512),
             nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=1024, out_channels=1024, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(512),
+            nn.ReLU(inplace=True),
             nn.ConvTranspose2d(in_channels=512, out_channels=128, kernel_size=3, stride=2, padding=1),
             ResnetBlock(in_channels=256, out_channels=256, t_emb_dim=t_emb_dim),
+            nn.BatchNorm2d(256),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(256),
             nn.ReLU(inplace=True),
             nn.ConvTranspose2d(in_channels=256, out_channels=64, kernel_size=3, stride=2, padding=1),
