@@ -88,49 +88,52 @@ class UNet(nn.Module):
             nn.Linear(t_emb_dim, t_emb_dim),
             nn.ReLU(inplace=True)
         )
-
+        # set up down layers in unet
         self.down_layers = nn.ModuleList([
             NormActConv(in_channels=in_channels, out_channels=self.down_ch),
         ])
-
         for _ in range(3):
             self.down_layers += [
                 ResnetBlock(in_channels=self.down_ch, out_channels=self.down_ch, t_emb_dim=t_emb_dim),
                 NormActConv(in_channels=self.down_ch, out_channels=2 * self.down_ch, stride=2)
             ]
             self.down_ch *= 2
-
         for _ in range(2):
             self.down_layers += [
                 ResnetBlock(in_channels=self.down_ch, out_channels=self.down_ch, t_emb_dim=t_emb_dim),
                 NormActConv(in_channels=self.down_ch, out_channels=self.down_ch),
             ]
-
-        self.mid_ch = nn.ModuleList([
-            ResnetBlock(in_channels=512, out_channels=512, t_emb_dim=t_emb_dim),
-            NormActConv(in_channels=512, out_channels=512),
+        # set up the bottleneck
+        self.mid_ch = self.down_ch
+        self.mid_layers = nn.ModuleList([
+            ResnetBlock(in_channels=self.mid_ch, out_channels=self.mid_ch, t_emb_dim=t_emb_dim),
+            NormActConv(in_channels=self.mid_ch, out_channels=self.mid_ch),
 
         ])
+        # set up the up layers in unet
+        self.up_ch = self.mid_ch
 
-        self.up_ch = nn.ModuleList([
-            ResnetBlock(in_channels=512, out_channels=512, t_emb_dim=t_emb_dim),
-            NormActConv(in_channels=512, out_channels=512),
-            ResnetBlock(in_channels=1024, out_channels=1024, t_emb_dim=t_emb_dim),
-            NormActConv(in_channels=1024, out_channels=1024),
-            NormActConvTranspose(in_channels=1024, out_channels=512, stride=2),
-            ResnetBlock(in_channels=1024, out_channels=1024, t_emb_dim=t_emb_dim),
-            NormActConv(in_channels=1024, out_channels=1024),
-            NormActConvTranspose(in_channels=1024, out_channels=256, stride=2),
-            ResnetBlock(in_channels=512, out_channels=512, t_emb_dim=t_emb_dim),
-            NormActConv(in_channels=512, out_channels=512),
-            NormActConvTranspose(in_channels=512, out_channels=128, stride=2),
-            ResnetBlock(in_channels=256, out_channels=256, t_emb_dim=t_emb_dim),
-            NormActConv(in_channels=256, out_channels=256),
-            NormActConvTranspose(in_channels=256, out_channels=64, stride=2),
-            nn.BatchNorm2d(64),
-            nn.ReLU(inplace=True),
-            nn.ConvTranspose2d(in_channels=128, out_channels=3, kernel_size=3, padding=1)
+        self.up_layers = nn.ModuleList([
+            ResnetBlock(in_channels=self.up_ch, out_channels=self.up_ch, t_emb_dim=t_emb_dim),
+            NormActConv(in_channels=self.up_ch, out_channels=self.up_ch),
+            ResnetBlock(in_channels=2 * self.up_ch, out_channels=2 * self.up_ch, t_emb_dim=t_emb_dim),
+            NormActConv(in_channels=2 * self.up_ch, out_channels=2 * self.up_ch),
+            NormActConvTranspose(in_channels=2 * self.up_ch, out_channels=self.up_ch, stride=2),
         ])
+
+        for _ in range(3):
+            self.up_layers += [
+                ResnetBlock(in_channels=2 * self.up_ch, out_channels=2 * self.up_ch, t_emb_dim=t_emb_dim),
+                NormActConv(in_channels=2 * self.up_ch, out_channels=2 * self.up_ch),
+                NormActConvTranspose(in_channels=2 * self.up_ch, out_channels=self.up_ch // 2, stride=2),
+            ]
+
+            self.up_ch //= 2
+
+        self.up_layers += [
+            NormActConvTranspose(in_channels=4 * self.up_ch, out_channels=self.up_ch, stride=2),
+            NormActConvTranspose(in_channels=2 * self.up_ch, out_channels=in_channels)
+        ]
 
 
     def forward(self, x: torch.Tensor, t_emb: torch.Tensor) -> torch.Tensor:
