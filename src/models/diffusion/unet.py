@@ -80,27 +80,31 @@ class NormActConvTranspose(nn.Module):
 
 class UNet(nn.Module):
     # https://arxiv.org/pdf/2104.05358 [Figure 4.],
-    def __init__(self, in_channels: int = 3, t_emb_dim: int = 256):
+    def __init__(self, in_channels: int = 3, starting_down_channels: int = 64, t_emb_dim: int = 256):
         super(UNet, self).__init__()
+        self.down_ch = starting_down_channels
         self.time_emb_mlp_layer = nn.Sequential(
             SinusoidalPositionalEmbedding(t_emb_dim),
             nn.Linear(t_emb_dim, t_emb_dim),
             nn.ReLU(inplace=True)
         )
-        #TODO refactor this shit
-        self.down_ch = nn.ModuleList([
-            NormActConv(in_channels=in_channels, out_channels=64),
-            ResnetBlock(in_channels=64, out_channels=64, t_emb_dim=t_emb_dim),
-            NormActConv(in_channels=64, out_channels=128, stride=2),
-            ResnetBlock(in_channels=128, out_channels=128, t_emb_dim=t_emb_dim),
-            NormActConv(in_channels=128, out_channels=256, stride=2),
-            ResnetBlock(in_channels=256, out_channels=256, t_emb_dim=t_emb_dim),
-            NormActConv(in_channels=256, out_channels=512, stride=2),
-            ResnetBlock(in_channels=512, out_channels=512, t_emb_dim=t_emb_dim),
-            NormActConv(in_channels=512, out_channels=512),
-            ResnetBlock(in_channels=512, out_channels=512, t_emb_dim=t_emb_dim),
-            NormActConv(in_channels=512, out_channels=512, stride=2),
+
+        self.down_layers = nn.ModuleList([
+            NormActConv(in_channels=in_channels, out_channels=self.down_ch),
         ])
+
+        for _ in range(3):
+            self.down_layers += [
+                ResnetBlock(in_channels=self.down_ch, out_channels=self.down_ch, t_emb_dim=t_emb_dim),
+                NormActConv(in_channels=self.down_ch, out_channels=2 * self.down_ch, stride=2)
+            ]
+            self.down_ch *= 2
+
+        for _ in range(2):
+            self.down_layers += [
+                ResnetBlock(in_channels=self.down_ch, out_channels=self.down_ch, t_emb_dim=t_emb_dim),
+                NormActConv(in_channels=self.down_ch, out_channels=self.down_ch),
+            ]
 
         self.mid_ch = nn.ModuleList([
             ResnetBlock(in_channels=512, out_channels=512, t_emb_dim=t_emb_dim),
