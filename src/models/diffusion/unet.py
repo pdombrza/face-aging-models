@@ -98,24 +98,23 @@ class UNet(nn.Module):
                 NormActConv(in_channels=self.down_ch, out_channels=2 * self.down_ch, stride=2)
             ]
             self.down_ch *= 2
-        for _ in range(2):
-            self.down_layers += [
+
+        self.down_layers += [
                 ResnetBlock(in_channels=self.down_ch, out_channels=self.down_ch, t_emb_dim=t_emb_dim),
                 NormActConv(in_channels=self.down_ch, out_channels=self.down_ch),
             ]
+
         # set up the bottleneck
         self.mid_ch = self.down_ch
         self.mid_layers = nn.ModuleList([
             ResnetBlock(in_channels=self.mid_ch, out_channels=self.mid_ch, t_emb_dim=t_emb_dim),
-            NormActConv(in_channels=self.mid_ch, out_channels=self.mid_ch),
-
+            NormActConv(in_channels=self.mid_ch, out_channels=self.mid_ch)
+            for _ in range(3)
         ])
+
         # set up the up layers in unet
         self.up_ch = self.mid_ch
-
         self.up_layers = nn.ModuleList([
-            ResnetBlock(in_channels=self.up_ch, out_channels=self.up_ch, t_emb_dim=t_emb_dim),
-            NormActConv(in_channels=self.up_ch, out_channels=self.up_ch),
             ResnetBlock(in_channels=2 * self.up_ch, out_channels=2 * self.up_ch, t_emb_dim=t_emb_dim),
             NormActConv(in_channels=2 * self.up_ch, out_channels=2 * self.up_ch),
             NormActConvTranspose(in_channels=2 * self.up_ch, out_channels=self.up_ch, stride=2),
@@ -131,10 +130,43 @@ class UNet(nn.Module):
             self.up_ch //= 2
 
         self.up_layers += [
-            NormActConvTranspose(in_channels=4 * self.up_ch, out_channels=self.up_ch, stride=2),
             NormActConvTranspose(in_channels=2 * self.up_ch, out_channels=in_channels)
         ]
 
 
-    def forward(self, x: torch.Tensor, t_emb: torch.Tensor) -> torch.Tensor:
-        ...
+    def forward(self, x: torch.Tensor, timestep: torch.Tensor) -> torch.Tensor:
+        t = self.time_emb_mlp_layer(timestep)
+        skip_connections = []
+        for layer in self.down_layers:
+            if isinstance(layer, NormActConv):
+                x = layer(x)
+                skip_connections.append(x)
+            elif isinstance(layer, ResnetBlock):
+                x = layer(x, t)
+            else:
+                raise ValueError("Invalid block in unet downsampling")
+
+        for layer in self.mid_layers:
+            if isinstance(layer, NormActConv):
+                x = layer(x)
+            elif isinstance(layer, ResnetBlock):
+                x = layer(x, t)
+            else:
+                raise ValueError("Invalid block in unet bottleneck")
+
+        for layer in self.up_layers[:-1]:
+            if isinstance(layer, NormActConv):
+                x = layer(x)
+            elif isinstance(layer, NormActConvTranspose):
+                x = layer(x)
+            elif isinstance(layer, ResnetBlock):
+                x = torch.cat([x, skip_connections.pop()], dim=1)
+                x = layer(x, t)
+            else:
+                raise ValueError("Invalid block in unet upsampling")
+
+        # apply first skip connection to final upsampling layer - normactconvtranspose
+        x = torch.cat([x, skip_connections.pop], dim=1)
+        x = self.up_layers[-1](x)
+
+        return x
