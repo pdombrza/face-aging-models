@@ -135,7 +135,7 @@ class UNet(nn.Module):
 
 
     def forward(self, x: torch.Tensor, timestep: torch.Tensor) -> torch.Tensor:
-        t = self.time_emb_mlp_layer(timestep)
+        t = self.time_emb_mlp_layer(timestep)  # prepare time for sinusoidal positional embedding
         skip_connections = []
         for layer in self.down_layers:
             if isinstance(layer, NormActConv):
@@ -155,9 +155,7 @@ class UNet(nn.Module):
                 raise ValueError("Invalid block in unet bottleneck")
 
         for layer in self.up_layers[:-1]:
-            if isinstance(layer, NormActConv):
-                x = layer(x)
-            elif isinstance(layer, NormActConvTranspose):
+            if isinstance(layer, NormActConv) or isinstance(layer, NormActConvTranspose):
                 x = layer(x)
             elif isinstance(layer, ResnetBlock):
                 x = torch.cat([x, skip_connections.pop()], dim=1)
@@ -166,7 +164,7 @@ class UNet(nn.Module):
                 raise ValueError("Invalid block in unet upsampling")
 
         # apply first skip connection to final upsampling layer - normactconvtranspose
-        x = torch.cat([x, skip_connections.pop], dim=1)
+        x = torch.cat([x, skip_connections.pop()], dim=1)
         x = self.up_layers[-1](x)
 
         return x
