@@ -32,7 +32,7 @@ class DiffusionModel(L.LightningModule):
         g_b_a_optimizer.zero_grad()
 
         x_a = batch["young_image"]
-        x_b = batch["young_image"]
+        x_b = batch["old_image"]
         batch_size = x_a.size(0)
         timestep = torch.randint(0, self.diffusion_sampler.n_timesteps (batch_size,), device=self.device)
 
