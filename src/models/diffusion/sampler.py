@@ -5,7 +5,7 @@ import numpy as np
 
 class DDPM:
     def __init__(self, beta_start: float = 1e-4, beta_end: float = 1e-2, n_timesteps: int = 1000):
-        self.betas = torch.linspace(beta_start ** 0.5, beta_end ** 0.5, n_timesteps, dtype=torch.float32) ** 2  # huggingface scaled linear schedule - from stable diffusion
+        self.betas = torch.linspace(beta_start, beta_end, n_timesteps, dtype=torch.float32) # linear schedule
         self.alphas = 1.0 - self.betas
         self.alpha_bars = torch.cumprod(self.alphas, dim=0)
         self.n_timesteps = n_timesteps
@@ -23,7 +23,7 @@ class DDPM:
         return noisy_samples
 
     @torch.no_grad()
-    def step(self, timestep: int, initial_noise: torch.Tensor, model_output: torch.Tensor):  # reverse process
+    def step(self, timestep: int, initial_noise: torch.Tensor, model_output: torch.Tensor):  # reverse process step
         # model output - noise predicted by the UNet
         t = timestep
         prev_t = timestep - 1

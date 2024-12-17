@@ -91,3 +91,10 @@ class DiffusionModel(L.LightningModule):
         denoise_a_optimizer = optim.Adam(self.denoise_a.parameters(), lr=1e-5, betas=(0.5, 0.999))
         denoise_b_optimizer = optim.Adam(self.denoise_b.parameters(), lr=1e-5, betas=(0.5, 0.999))
         return [g_a_b_optimizer, g_b_a_optimizer, denoise_a_optimizer, denoise_b_optimizer]
+
+    def forward(self, x_a: torch.Tensor) -> torch.Tensor:
+        x_b = torch.randn(x_a.shape, device=self.device, dtype=x_a.dtype)
+        for t in range(self.diffusion_sampler.n_timesteps - 1, -1, -1):
+            noise_a = torch.randn(x_a.shape, device=self.device, dtype=x_a.dtype)
+            noise_b = torch.randn(x_b.shape, device=self.device, dtype=x_b.dtype)
+            x_a = self.diffusion_sampler.add_noise(x_a, t, noise_a)
