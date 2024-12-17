@@ -92,7 +92,7 @@ class DiffusionModel(L.LightningModule):
         denoise_b_optimizer = optim.Adam(self.denoise_b.parameters(), lr=1e-5, betas=(0.5, 0.999))
         return [g_a_b_optimizer, g_b_a_optimizer, denoise_a_optimizer, denoise_b_optimizer]
 
-    def forward(self, x_a: torch.Tensor) -> torch.Tensor:
+    def forward(self, x_a: torch.Tensor) -> torch.Tensor: # inference
         x_b = torch.randn(x_a.shape, device=self.device, dtype=x_a.dtype)
         # arbitrary timestep necessary - half?
         t_r = self.diffusion_sampler.n_timesteps // 2
@@ -108,3 +108,21 @@ class DiffusionModel(L.LightningModule):
             x_a = self.diffusion_sampler.denoise_step(x_b, timestep, self.denoise_b(torch.cat([x_b, x_a], 1), timestep))
 
         return x_b
+
+    def validation_step(self, batch: torch.Tensor, batch_idx: int):
+        if not self.logger:
+            return
+
+        with torch.no_grad():
+            x_a = batch["young_image"]
+            x_b = batch["old_image"]
+            cycle_b = self.g_a_b(x_a, torch.Tensor([0], device=self.device))
+            cycle_a = self.g_b_a(x_b, torch.Tensor([0], device=self.device))
+            denoised_b = self.forward(x_a)
+
+        self.logger.experiment.add_image("diff_cycle_b", torchvision.utils.make_grid(self._unnormalize_output(cycle_b)), self.current_epoch)
+        self.logger.experiment.add_image("diff_cycle_a", torchvision.utils.make_grid(self._unnormalize_output(cycle_a)), self.current_epoch)
+        self.logger.experiment.add_image("diffusion_denoised_b", torchvision.utils.make_grid(self._unnormalize_output(denoised_b)), self.current_epoch)
+
+    def _unnormalize_output(self, x: torch.Tensor) -> torch.Tensor:
+        return (x * 0.5) + 0.5
