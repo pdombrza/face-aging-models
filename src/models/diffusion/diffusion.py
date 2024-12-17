@@ -95,6 +95,7 @@ class DiffusionModel(L.LightningModule):
     def forward(self, x_a: torch.Tensor) -> torch.Tensor:
         x_b = torch.randn(x_a.shape, device=self.device, dtype=x_a.dtype)
         for t in range(self.diffusion_sampler.n_timesteps - 1, -1, -1):
+            timestep = torch.IntTensor([t], device=self.device)
             noise_a = torch.randn(x_a.shape, device=self.device, dtype=x_a.dtype)
             noise_b = torch.randn(x_b.shape, device=self.device, dtype=x_b.dtype)
-            x_a = self.diffusion_sampler.add_noise(x_a, t, noise_a)
+            x_a = self.diffusion_sampler.add_noise(x_a, timestep, noise_a)

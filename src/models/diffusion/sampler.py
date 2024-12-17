@@ -23,32 +23,20 @@ class DDPM:
         return noisy_samples
 
     @torch.no_grad()
-    def step(self, timestep: int, initial_noise: torch.Tensor, model_output: torch.Tensor):  # reverse process step
+    def denoise_step(self, image: torch.Tensor, timestep: torch.IntTensor, predicted_noise: torch.Tensor) -> torch.Tensor:  # reverse process step
         # model output - noise predicted by the UNet
         t = timestep
         prev_t = timestep - 1
+        beta_t = self.betas[t]
+        alpha_t = self.alphas[t]
         alpha_bars_t = self.alpha_bars[t]
-        alpha_bars_t_prev = self.alpha_bars[prev_t]
-        beta_bars_t = 1.0 - alpha_bars_t
-        beta_bars_t_prev = 1.0 - alpha_bars_t_prev
-        curr_alpha_t = alpha_bars_t / alpha_bars_t_prev
-        curr_beta_t = 1.0 - curr_alpha_t
 
-        # predicted original sample - equation (15) of the DDPM paper
-        pred_original_sample = (initial_noise - torch.sqrt(beta_bars_t) * model_output) / torch.sqrt(alpha_bars_t)
-
-        # coefficient for the pred_original_sample and
-        pred_original_sample_coeff = torch.sqrt(alpha_bars_t_prev) * curr_beta_t / beta_bars_t
-        # current sample x_t coefficient
-        current_sample_coeff = torch.sqrt(curr_alpha_t) * beta_bars_t_prev / beta_bars_t
-
-        # compute the predicted previous sample mean
-        pred_prev_sample = pred_original_sample_coeff * pred_original_sample + current_sample_coeff * initial_noise  # mean
+        pred_prev_sample = torch.pow(alpha_t, -0.5) * (image - beta_t / torch.sqrt(1 - alpha_bars_t) * predicted_noise)
 
         variance = 0
         if t > 0:
-            device = model_output.device
-            noise = torch.randn(model_output.shape, device=device, dtype=model_output.dtype)
+            device = image.device
+            noise = torch.randn(image.shape, device=device, dtype=image.dtype)
             variance = torch.sqrt(self._get_variance(t)) * noise
 
         # reparametrization trick to go from N(0, 1) to N(mu, sigma) - same as in the VAE
@@ -56,7 +44,7 @@ class DDPM:
         pred_prev_sample += variance
         return pred_prev_sample
 
-    def _get_variance(self, timestep: int) -> torch.Tensor:
+    def _get_variance(self, timestep: torch.IntTensor) -> torch.Tensor:
         t = timestep
         prev_t = timestep - 1
         alpha_bars_t = self.alpha_bars[t]
