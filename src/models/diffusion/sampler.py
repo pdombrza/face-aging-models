@@ -26,7 +26,6 @@ class DDPM:
     def denoise_step(self, image: torch.Tensor, timestep: torch.IntTensor, predicted_noise: torch.Tensor) -> torch.Tensor:  # reverse process step
         # model output - noise predicted by the UNet
         t = timestep
-        prev_t = timestep - 1
         beta_t = self.betas[t]
         alpha_t = self.alphas[t]
         alpha_bars_t = self.alpha_bars[t]
