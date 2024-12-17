@@ -106,11 +106,12 @@ class UNet(nn.Module):
 
         # set up the bottleneck
         self.mid_ch = self.down_ch
-        self.mid_layers = nn.ModuleList([
-            ResnetBlock(in_channels=self.mid_ch, out_channels=self.mid_ch, t_emb_dim=t_emb_dim),
-            NormActConv(in_channels=self.mid_ch, out_channels=self.mid_ch)
-            for _ in range(3)
-        ])
+        self.mid_layers = nn.ModuleList()
+        for _ in range(3):
+            self.mid_layers += [
+                ResnetBlock(in_channels=self.mid_ch, out_channels=self.mid_ch, t_emb_dim=t_emb_dim),
+                NormActConv(in_channels=self.mid_ch, out_channels=self.mid_ch)
+            ]
 
         # set up the up layers in unet
         self.up_ch = self.mid_ch
