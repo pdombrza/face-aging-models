@@ -13,7 +13,6 @@ from lightning.pytorch.loggers import TensorBoardLogger
 from lightning.pytorch.callbacks import ModelCheckpoint
 from torchmetrics.image.lpip import LearnedPerceptualImagePatchSimilarity as LPIPS
 
-#from piq import LPIPS # maybe use lpips from here instead
 from src.models.FRAN.fran import Generator, Discriminator
 from src.models.FRAN.fran_utils import FRANLossLambdaParams
 from src.datasets.fgnet_loader import FGNETFRANDataset
@@ -35,7 +34,6 @@ class FRAN(L.LightningModule):
         self.l1_loss = nn.L1Loss()  # maybe dependency injection
         self.adversarial_loss = nn.BCEWithLogitsLoss()
         self.perceptual_loss = LPIPS(net_type='vgg')
-        #self.perceptual_loss = LPIPS()
         self.automatic_optimization = False
 
     def training_step(self, batch: torch.Tensor, batch_idx: int) -> None:

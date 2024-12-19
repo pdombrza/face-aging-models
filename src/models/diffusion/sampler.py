@@ -16,7 +16,7 @@ class DDPM:
         alpha_bars = self.alpha_bars.to(device=original_sample.device, dtype=original_sample.dtype)
         timestep = timestep.to(device=original_sample.device)
         sqrt_alpha_bars = torch.sqrt(alpha_bars[timestep]) # mean
-        sqrt_one_minus_alpha_bars = torch.sqrt((1.0 - sqrt_alpha_bars[timestep]))  # stdev
+        sqrt_one_minus_alpha_bars = torch.sqrt((1.0 - alpha_bars[timestep]))  # stdev
         # equation (4) of the DDPM paper
         # X = mean + stdev * Z
         noisy_samples = (sqrt_alpha_bars * original_sample) + (sqrt_one_minus_alpha_bars) * noise
@@ -25,10 +25,14 @@ class DDPM:
     @torch.no_grad()
     def denoise_step(self, image: torch.Tensor, timestep: torch.IntTensor, predicted_noise: torch.Tensor) -> torch.Tensor:  # reverse process step
         # model output - noise predicted by the UNet
-        t = timestep
-        beta_t = self.betas[t]
-        alpha_t = self.alphas[t]
-        alpha_bars_t = self.alpha_bars[t]
+        t = timestep.to(device=image.device)
+        betas = self.betas.to(device=image.device)
+        beta_t = betas[t]
+        alphas = self.alphas.to(device=image.device)
+        alpha_t = alphas[t]
+        alpha_bars = self.alpha_bars.to(device=image.device)
+        alpha_bars_t = alpha_bars[t]
+
 
         pred_prev_sample = torch.pow(alpha_t, -0.5) * (image - beta_t / torch.sqrt(1 - alpha_bars_t) * predicted_noise)
 
@@ -46,8 +50,9 @@ class DDPM:
     def _get_variance(self, timestep: torch.IntTensor) -> torch.Tensor:
         t = timestep
         prev_t = timestep - 1
-        alpha_bars_t = self.alpha_bars[t]
-        alpha_bars_t_prev = self.alpha_bars[prev_t] if prev_t >= 0 else torch.Tensor(1.0)
+        alpha_bars = self.alpha_bars.to(timestep.device)
+        alpha_bars_t = alpha_bars[t]
+        alpha_bars_t_prev = alpha_bars[prev_t] if prev_t >= 0 else torch.tensor(1.0, device=timestep.device)
         curr_beta_t = 1.0 - alpha_bars_t / alpha_bars_t_prev
 
         # according to formulas (6) and (7) in the DDPM paper

@@ -28,7 +28,7 @@ class ResnetBlock(nn.Module):
         self.feature_block = nn.Sequential(
             nn.BatchNorm2d(in_channels),
             nn.ReLU(inplace=True),
-            nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=3, stride=1)
+            nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=3, stride=1, padding=1)
         )
 
         self.time_block = nn.Sequential(
@@ -44,7 +44,7 @@ class ResnetBlock(nn.Module):
 
     def forward(self, x, time):
         residue = x
-        x = self.feature_block
+        x = self.feature_block(x)
         time = self.time_block(time)
         time_feature = x + time.unsqueeze(-1).unsqueeze(-1) # need to check dimensions cause unsure but likely time has shape B x out_ch, and x has B x C x H x W
         time_feature = self.time_feature_block(time_feature)
@@ -55,6 +55,8 @@ class ResnetBlock(nn.Module):
 class NormActConv(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1):
         super(NormActConv, self).__init__()
+        self.in_channels = in_channels
+        self.out_channels = out_channels
         self.norm_act_conv = nn.Sequential(
             nn.BatchNorm2d(in_channels),
             nn.ReLU(inplace=True),
@@ -66,12 +68,12 @@ class NormActConv(nn.Module):
 
 
 class NormActConvTranspose(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1):
+    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1, output_padding=0):
         super(NormActConvTranspose, self).__init__()
         self.norm_act_convtranspose = nn.Sequential(
             nn.BatchNorm2d(in_channels),
             nn.ReLU(inplace=True),
-            nn.ConvTranspose2d(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size, stride=stride, padding=padding)
+            nn.ConvTranspose2d(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size, stride=stride, padding=padding, output_padding=output_padding)
         )
 
     def forward(self, x):
@@ -80,7 +82,7 @@ class NormActConvTranspose(nn.Module):
 
 class UNet(nn.Module):
     # https://arxiv.org/pdf/2104.05358 [Figure 4.],
-    def __init__(self, in_channels: int = 3, starting_down_channels: int = 64, t_emb_dim: int = 256):
+    def __init__(self, in_channels: int = 6, starting_down_channels: int = 64, t_emb_dim: int = 256): # 6 in_channels because 2 starting images in denoise fn
         super(UNet, self).__init__()
         self.down_ch = starting_down_channels
         self.time_emb_mlp_layer = nn.Sequential(
@@ -101,7 +103,7 @@ class UNet(nn.Module):
 
         self.down_layers += [
                 ResnetBlock(in_channels=self.down_ch, out_channels=self.down_ch, t_emb_dim=t_emb_dim),
-                NormActConv(in_channels=self.down_ch, out_channels=self.down_ch),
+                NormActConv(in_channels=self.down_ch, out_channels=self.down_ch, stride=2),
             ]
 
         # set up the bottleneck
@@ -118,20 +120,20 @@ class UNet(nn.Module):
         self.up_layers = nn.ModuleList([
             ResnetBlock(in_channels=2 * self.up_ch, out_channels=2 * self.up_ch, t_emb_dim=t_emb_dim),
             NormActConv(in_channels=2 * self.up_ch, out_channels=2 * self.up_ch),
-            NormActConvTranspose(in_channels=2 * self.up_ch, out_channels=self.up_ch, stride=2),
+            NormActConvTranspose(in_channels=2 * self.up_ch, out_channels=self.up_ch, stride=2, output_padding=1),
         ])
 
         for _ in range(3):
             self.up_layers += [
                 ResnetBlock(in_channels=2 * self.up_ch, out_channels=2 * self.up_ch, t_emb_dim=t_emb_dim),
                 NormActConv(in_channels=2 * self.up_ch, out_channels=2 * self.up_ch),
-                NormActConvTranspose(in_channels=2 * self.up_ch, out_channels=self.up_ch // 2, stride=2),
+                NormActConvTranspose(in_channels=2 * self.up_ch, out_channels=self.up_ch // 2, stride=2, output_padding=1),
             ]
 
             self.up_ch //= 2
 
         self.up_layers += [
-            NormActConvTranspose(in_channels=2 * self.up_ch, out_channels=in_channels)
+            NormActConvTranspose(in_channels=2 * self.up_ch, out_channels=3)
         ]
 
 
