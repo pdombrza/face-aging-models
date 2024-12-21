@@ -133,6 +133,12 @@ class CycleGAN(L.LightningModule):
         self.logger.experiment.add_image("cycle_gan_cycle_y", torchvision.utils.make_grid(self._unnormalize_output(cycle_y)), self.current_epoch)
         self.logger.experiment.add_image("cycle_gan_cycle_x", torchvision.utils.make_grid(self._unnormalize_output(cycle_x)), self.current_epoch)
 
+    def forward(self, x_img):
+        with torch.no_grad():
+            self.f.eval()
+            generated_img = self.f(x_img)
+        return generated_img
+
     def configure_optimizers(self):
         g_optimizer = optim.Adam(self.g.parameters(), **self.optimizer_params)
         f_optimizer = optim.Adam(self.f.parameters(), **self.optimizer_params)
