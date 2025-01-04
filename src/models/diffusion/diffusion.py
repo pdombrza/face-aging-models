@@ -72,12 +72,12 @@ class DiffusionModel(L.LightningModule):
         noisy_pred_b = torch.stack(noisy_pred_b, dim=0)
 
         denoise_loss = self.denoiser_loss(noise_a, self.denoise_a(torch.cat([noisy_x_a, noisy_pred_b], 1), timestep_a)) + \
-                        self.denoiser_loss(noise_b, self.denoise_b(torch.cat([noisy_x_b, noisy_pred_a], 1), timestep_b))
+            self.denoiser_loss(noise_b, self.denoise_b(torch.cat([noisy_x_b, noisy_pred_a], 1), timestep_b))
 
         dsm_loss = self.dsm_loss(noise_a, self.denoise_a(torch.cat([noisy_x_a, noisy_pred_b], 1), timestep_a)) + \
-                    self.dsm_loss(noise_a, self.denoise_a(torch.cat([noisy_pred_a, noisy_x_b], 1), timestep_b)) + \
-                    self.dsm_loss(noise_b, self.denoise_b(torch.cat([noisy_x_a, noisy_pred_a], 1), timestep_b)) + \
-                    self.dsm_loss(noise_b, self.denoise_b(torch.cat([noisy_pred_b, noisy_x_a], 1), timestep_a))
+            self.dsm_loss(noise_a, self.denoise_a(torch.cat([noisy_pred_a, noisy_x_b], 1), timestep_b)) + \
+            self.dsm_loss(noise_b, self.denoise_b(torch.cat([noisy_x_b, noisy_pred_a], 1), timestep_b)) + \
+            self.dsm_loss(noise_b, self.denoise_b(torch.cat([noisy_pred_b, noisy_x_a], 1), timestep_a))
 
         cyc_loss = self.cycle_consistency_loss(x_a, self.g_b_a(pred_x_b)) + self.cycle_consistency_loss(x_b, self.g_a_b(pred_x_a))
 
