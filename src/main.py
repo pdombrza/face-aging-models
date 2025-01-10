@@ -1,8 +1,8 @@
-from src.features import cacd_detect_faces
+from app.app import run_app
 
 
 def main():
-    cacd_detect_faces.detect()
+    run_app()
 
 
 if __name__ == "__main__":

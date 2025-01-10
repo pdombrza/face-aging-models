@@ -26,20 +26,20 @@ class ResnetBlock(nn.Module):
     def __init__(self, in_channels: int, out_channels: int, t_emb_dim: int = 256):
         super(ResnetBlock, self).__init__()
         self.feature_block = nn.Sequential(
+            nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(in_channels),
             nn.ReLU(inplace=True),
-            nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=3, stride=1, padding=1)
         )
 
         self.time_block = nn.Sequential(
-            nn.SiLU(inplace=True),
             nn.Linear(t_emb_dim, out_channels),
+            nn.SiLU(inplace=True),
         )
 
         self.time_feature_block = nn.Sequential( # from SD
+            nn.Conv2d(out_channels, out_channels, kernel_size=1, padding=0),
             nn.BatchNorm2d(out_channels),
             nn.SiLU(inplace=True),
-            nn.Conv2d(out_channels, out_channels, kernel_size=1, padding=0)
         )
 
     def forward(self, x, time):
@@ -58,9 +58,9 @@ class NormActConv(nn.Module):
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.norm_act_conv = nn.Sequential(
+            nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size, stride=stride, padding=padding),
             nn.BatchNorm2d(in_channels),
             nn.ReLU(inplace=True),
-            nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size, stride=stride, padding=padding)
         )
 
     def forward(self, x):
@@ -71,9 +71,9 @@ class NormActConvTranspose(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1, output_padding=0):
         super(NormActConvTranspose, self).__init__()
         self.norm_act_convtranspose = nn.Sequential(
+            nn.ConvTranspose2d(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size, stride=stride, padding=padding, output_padding=output_padding),
             nn.BatchNorm2d(in_channels),
             nn.ReLU(inplace=True),
-            nn.ConvTranspose2d(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size, stride=stride, padding=padding, output_padding=output_padding)
         )
 
     def forward(self, x):
@@ -126,7 +126,7 @@ class UNet(nn.Module):
         for _ in range(3):
             self.up_layers += [
                 ResnetBlock(in_channels=2 * self.up_ch, out_channels=2 * self.up_ch, t_emb_dim=t_emb_dim),
-                NormActConv(in_channels=2 * self.up_ch, out_channels=2 * self.up_ch),
+                # NormActConv(in_channels=2 * self.up_ch, out_channels=2 * self.up_ch),
                 NormActConvTranspose(in_channels=2 * self.up_ch, out_channels=self.up_ch // 2, stride=2, output_padding=1),
             ]
 
