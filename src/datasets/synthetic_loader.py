@@ -56,7 +56,6 @@ class SynthFRANDataset(Dataset):
         if isinstance(self.transform, AugmentationSequential) is True:
             input_image = self.transform(input_image).squeeze()
             target_image = self.transform(target_image, params=self.transform._params).squeeze()
-            print("kornia")
         else:
             input_image = self.transform(input_image)
             target_image = self.transform(target_image)
