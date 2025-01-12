@@ -20,6 +20,7 @@ torch.set_float32_matmul_precision('high')
 
 def train(
     dataset: str,
+    age_type: int = 1,
     loss_params: CycleGANLossLambdaParams | None = None,
     time_limit_s: int | None = None,
     n_valid_images: int = 16,
@@ -33,7 +34,7 @@ def train(
 
     transform = transforms.Compose([
         transforms.ConvertImageDtype(dtype=torch.float),
-        transforms.Resize((img_size, img_size)) if img_size != 244 else transforms.Lambda(lambda x: x),
+        transforms.Resize((img_size, img_size)) if img_size != 250 else transforms.Lambda(lambda x: x),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
 
@@ -42,7 +43,7 @@ def train(
     elif dataset == "cacd":
         meta_path = CACD_META_SEX_ANNOTATED_PATH
         images_dir_path = CACD_SPLIT_DIR
-        dataset = CACDCycleGANDataset(meta_path, images_dir_path, transform)
+        dataset = CACDCycleGANDataset(meta_path, images_dir_path, age_type, transform)
     else:
         raise ValueError("Invalid dataset. Available: 'cacd', 'fgnet'.")
 
@@ -87,6 +88,7 @@ def train(
 def main():
     parser = ArgumentParser(description="Train CycleGAN model.")
     parser.add_argument("--dataset", help="Dataset to use for training. Possible options: 'cacd', 'fgnet'.", required=True)
+    parser.add_argument("--age_type", help="Available age transformation intervals. 1 - 20-30->50-60, 2 - 20-30->35-45, 3 - 35-45-> 50-60. Default: 1", required=False, default=1),
     parser.add_argument("--maxtime", type=int, help="Time limit for training in seconds. Default: 86400.", required=False)
     parser.add_argument("--n_valid_images", type=int, help="Number of validation images. Default: 16", required=False, default=16)
     parser.add_argument("--epochs", type=int, help="Number of training epochs.", required=False, default=10)
@@ -104,7 +106,7 @@ def main():
     save_path = args.save if args.save is not None else Path("models/cycle_gan/")
     log_dir = args.log_dir if args.log_dir is not None else Path("models/cycle_gan/tb_logs")
     img_size = max(min(args.img_size, 244), 16)
-    model, trainer = train(args.dataset, loss_params, args.maxtime, args.n_valid_images, args.epochs, args.batch, img_size, save_path, log_dir, args.ckpt_load)
+    model, trainer = train(args.dataset, args.age_type, loss_params, args.maxtime, args.n_valid_images, args.epochs, args.batch, img_size, save_path, log_dir, args.ckpt_load)
     trainer.save_checkpoint(os.path.join(save_path, f"cycle_gan_fin"))
 
 

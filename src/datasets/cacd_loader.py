@@ -53,12 +53,18 @@ class CACDDataset(Dataset):
 
 
 class CACDCycleGANDataset(Dataset):
-    def __init__(self, csv_file, img_root_dir, transform=None):
+    def __init__(self, csv_file, img_root_dir, age_type=1, transform=None):
         self.metadata = pd.read_csv(csv_file)
         self.transform = transform
         self.img_root_dir = img_root_dir
-        self.young_images = self.metadata[(self.metadata['age'] >= 20) & (self.metadata['age'] <= 30)]
-        self.old_images = self.metadata[(self.metadata['age'] >= 50) & (self.metadata['age'] <= 60)]
+        if age_type == 1:
+            y_lower_bound, y_upper_bound, o_lower_bound, o_upper_bound = 20, 30, 50, 60
+        elif age_type == 2:
+            y_lower_bound, y_upper_bound, o_lower_bound, o_upper_bound = 20, 30, 35, 45
+        elif age_type == 3:
+            y_lower_bound, y_upper_bound, o_lower_bound, o_upper_bound = 35, 45, 50, 60
+        self.young_images = self.metadata[(self.metadata['age'] >= y_lower_bound) & (self.metadata['age'] <= y_upper_bound)]
+        self.old_images = self.metadata[(self.metadata['age'] >= o_lower_bound) & (self.metadata['age'] <= o_upper_bound)]
         if transform is None:
             self.transform = transforms.Compose([
                 transforms.ConvertImageDtype(dtype=torch.float),
