@@ -105,7 +105,7 @@ torch==2.4.1
 torchaudio==2.4.1
 torchmetrics==1.4.0.post0
 torchvision==0.19.1
-tornado==6.4.1
+tornado==6.4.2
 tqdm==4.66.5
 traitlets==5.14.3
 triton==3.0.0
