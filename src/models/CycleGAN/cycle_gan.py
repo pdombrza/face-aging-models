@@ -48,8 +48,8 @@ class Generator(nn.Module):
     def __init__(self, num_residual_blocks: int = 9):
         super(Generator, self).__init__()
         self.gen = [
-            nn.ReflectionPad2d(3), # 3 input channels since we're dealing with rgb images
-            nn.Conv2d(3, 64, kernel_size=7),
+            #nn.ReflectionPad2d(3),
+            nn.Conv2d(3, 64, kernel_size=7, stride=1, padding=3),
             nn.InstanceNorm2d(64),
             nn.ReLU(inplace=True)
         ]
@@ -73,7 +73,7 @@ class Generator(nn.Module):
             ]
             num_channels //= 2
         self.gen += [
-            # nn.ReflectionPad2d(3), # this causes shape mismatch (makes sense)
+            #nn.ReflectionPad2d(3), # this causes shape mismatch (makes sense)
             nn.Conv2d(64, 3, kernel_size=7, stride=1, padding=3),
             nn.Tanh()
         ]

@@ -25,7 +25,7 @@ def train(
     n_valid_images: int = 16,
     epochs: int = 10,
     batch_size: int = 8,
-    img_size: int = 250,
+    img_size: int = 244,
     ckpt_save_dir: Path | str = Path("models/cycle_gan"),
     log_dir: Path | str = Path("models/cycle_gan/tb_logs"),
     ckpt_load_path: Path | str | None = None,
@@ -33,7 +33,7 @@ def train(
 
     transform = transforms.Compose([
         transforms.ConvertImageDtype(dtype=torch.float),
-        transforms.Resize((img_size, img_size)) if img_size != 250 else transforms.Lambda(lambda x: x),
+        transforms.Resize((img_size, img_size)) if img_size != 244 else transforms.Lambda(lambda x: x),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
 
@@ -75,7 +75,7 @@ def train(
         time_limit = timedelta(hours=24)
 
     trainer = L.Trainer(
-        callbacks=[checkpoint_callback, exception_callback],
+        callbacks=[checkpoint_callback],
         max_epochs=epochs,
         max_time=time_limit,
         logger=logger
@@ -91,7 +91,7 @@ def main():
     parser.add_argument("--n_valid_images", type=int, help="Number of validation images. Default: 16", required=False, default=16)
     parser.add_argument("--epochs", type=int, help="Number of training epochs.", required=False, default=10)
     parser.add_argument("--batch", type=int, help="Batch size. Default: 8", required=False, default=8)
-    parser.add_argument("--img_size", type=int, help="Training image size. Default: 250", required=False, default=250)
+    parser.add_argument("--img_size", type=int, help="Training image size. Default: 244", required=False, default=250)
     parser.add_argument("--lambda_identity", type=float, help="Lambda param for identity Loss. Default: 5.0", required=False, default=5.0)
     parser.add_argument("--lambda_cycle", type=float, help="Lambda param for cycle Loss. Default: 10.0", required=False, default=10.0)
     parser.add_argument("--lambda_total", type=float, help="Lambda param for total Loss. Default: 0.5", required=False, default=0.5)
@@ -103,7 +103,7 @@ def main():
     loss_params = CycleGANLossLambdaParams(args.lambda_identity, args.lambda_cycle, args.lambda_total)
     save_path = args.save if args.save is not None else Path("models/cycle_gan/")
     log_dir = args.log_dir if args.log_dir is not None else Path("models/cycle_gan/tb_logs")
-    img_size = max(min(args.img_size, 250), 16)
+    img_size = max(min(args.img_size, 244), 16)
     model, trainer = train(args.dataset, loss_params, args.maxtime, args.n_valid_images, args.epochs, args.batch, img_size, save_path, log_dir, args.ckpt_load)
     trainer.save_checkpoint(os.path.join(save_path, f"cycle_gan_fin"))
 
