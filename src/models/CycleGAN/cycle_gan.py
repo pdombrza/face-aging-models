@@ -5,8 +5,6 @@ import torch.nn as nn
 class ResidualBlock(nn.Module):
     def __init__(self, in_channels: int, padding_type: str = '', conv_bias: bool = True) -> None:
         super(ResidualBlock, self).__init__()
-        # maybe experiment with reflectionpad2d or replicationpad2d
-        # as in the original cyclegan implementation: https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix/blob/master/models/networks.py
         self.res_block = nn.Sequential(
             nn.Conv2d(in_channels, in_channels, kernel_size=3, stride=1, padding=1), # maybe set bias to false?
             nn.InstanceNorm2d(in_channels),
@@ -47,7 +45,7 @@ class Discriminator(nn.Module):
 
 
 class Generator(nn.Module):
-    def __init__(self, num_residual_blocks: int = 6):
+    def __init__(self, num_residual_blocks: int = 9):
         super(Generator, self).__init__()
         self.gen = [
             nn.ReflectionPad2d(3), # 3 input channels since we're dealing with rgb images

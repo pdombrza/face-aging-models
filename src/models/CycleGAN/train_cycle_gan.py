@@ -13,13 +13,13 @@ from torch.utils.data import DataLoader, random_split
 from matplotlib import pyplot as plt
 import lightning as L
 from lightning.pytorch.loggers import TensorBoardLogger
-from lightning.pytorch.callbacks import ModelCheckpoint
+from lightning.pytorch.callbacks import ModelCheckpoint, OnExceptionCheckpoint
 
-from cycle_gan import Discriminator, Generator
-from cycle_gan_utils import CycleGANLossLambdaParams
-from constants import FGNET_IMAGES_DIR, CACD_META_SEX_ANNOTATED_PATH, CACD_SPLIT_DIR
-from datasets.fgnet_loader import FGNETCycleGANDataset
-from datasets.cacd_loader import CACDCycleGANDataset
+from src.models.CycleGAN.cycle_gan import Discriminator, Generator
+from src.models.CycleGAN.cycle_gan_utils import CycleGANLossLambdaParams
+from src.constants import FGNET_IMAGES_DIR, CACD_META_SEX_ANNOTATED_PATH, CACD_SPLIT_DIR
+#from datasets.fgnet_loader import FGNETCycleGANDataset
+from src.datasets.cacd_loader import CACDCycleGANDataset
 
 
 class CycleGAN(L.LightningModule):
@@ -38,7 +38,7 @@ class CycleGAN(L.LightningModule):
         self.d_y = discriminator if discriminator is not None else Discriminator()
         self.loss_params = loss_params if loss_params is not None else CycleGANLossLambdaParams()
         self.adversarial_loss = nn.MSELoss()
-        self.cycle_consistency_loss = nn.L1Loss()
+        self.cycle_consistency_loss = nn.MSELoss()
         self.identity_loss = nn.L1Loss()
         self.optimizer_params = optimizer_params
         self.automatic_optimization = False
@@ -179,18 +179,16 @@ def main():
         transforms.Resize((160, 160)),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
-
-    dataset = FGNETCycleGANDataset(FGNET_IMAGES_DIR, transform)
+    dataset = CACDCycleGANDataset(CACD_META_SEX_ANNOTATED_PATH, CACD_SPLIT_DIR, transform)
     n_valid_images = 16
     train_size = len(dataset) - n_valid_images
     train_set, valid_set = random_split(dataset, (train_size, n_valid_images))
     batch_size = 8
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True, drop_last=True)
     valid_loader = DataLoader(valid_set, batch_size=n_valid_images, shuffle=False, num_workers=8, pin_memory=True)
-
     loss_params = CycleGANLossLambdaParams()
     optimizer_params = {"lr": 0.0002, "betas": (0.5, 0.999)}
-    cycle_gan_model = CycleGAN(Generator(), Discriminator(), optimizer_params, loss_params)
+    cycle_gan_model = CycleGAN(optimizer_params, Generator(), Discriminator(), loss_params)
 
     # setup logging and checkpoints
     val_every_n_epochs = 1
@@ -199,6 +197,11 @@ def main():
         filename="cycle_gan_{epoch:02d}",
         every_n_epochs=val_every_n_epochs,
         save_top_k=-1,
+    )
+
+    exeption_callback = OnExceptionCheckpoint(
+        dirpath="../drive/MyDrive/inz_trening/fran",
+        filename="cycle_gan_{epoch}-{step}_ex",
     )
 
     cycle_gan_trainer = L.Trainer(

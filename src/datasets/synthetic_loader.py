@@ -10,7 +10,7 @@ from kornia.augmentation import AugmentationSequential
 from torch.utils.data import Dataset, DataLoader
 import torchvision.transforms as transforms
 from torchvision.io import ImageReadMode, read_image
-from constants import SYNTHETIC_IMAGES_FULL
+from src.constants import SYNTHETIC_IMAGES_FULL
 
 TARGET_AGES = [13, 18, 23, 28, 33, 38, 43, 48, 53, 58, 63, 68, 73, 78, 83]
 

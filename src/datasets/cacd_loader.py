@@ -92,7 +92,6 @@ class CACDCycleGANDataset(Dataset):
 
 
 class CACDFRANDataset(Dataset):
-    # Maybe merge with FGNET dataset?
     def __init__(self, csv_file, img_root_dir, transform=None):
         self.metadata = pd.read_csv(csv_file)
         self.transform = transform
@@ -138,7 +137,9 @@ class CACDFRANDataset(Dataset):
 
 def main():
     meta_path = CACD_META_SEX_ANNOTATED_PATH
+    meta_path = "../examples/meta_ex.csv"
     images_dir_path = CACD_SPLIT_DIR
+    images_dir_path = "../examples/cacd_split"
     transform = transforms.Compose(
         [
             transforms.ConvertImageDtype(dtype=torch.float),
@@ -147,9 +148,9 @@ def main():
         ]
     )
 
-    dataset = CACDFRANDataset(meta_path, images_dir_path, transform=transform)
+    dataset = CACDCycleGANDataset(meta_path, images_dir_path, transform)
     dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
-    print(next(iter(dataloader)))
+    print(len(dataset))
     # meta_df = pd.read_csv(meta_path)
     # print(gen_cacd_img_pairs_fran(meta_df))
 
