@@ -75,7 +75,7 @@ def train(
         time_limit = timedelta(hours=24)
 
     trainer = L.Trainer(
-        callbacks=[checkpoint_callback],
+        callbacks=[checkpoint_callback, exception_callback],
         max_epochs=epochs,
         max_time=time_limit,
         logger=logger
