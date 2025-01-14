@@ -3,6 +3,7 @@ if __name__ == "__main__":
     sys.path.append('../src')
 
 from datetime import datetime
+from copy import deepcopy
 
 import torch
 import torchvision
@@ -33,9 +34,9 @@ class CycleGAN(L.LightningModule):
     ) -> None:
         super(CycleGAN, self).__init__()
         self.g = generator if generator is not None else Generator()
-        self.f = generator if generator is not None else Generator()
+        self.f = deepcopy(generator) if generator is not None else Generator()
         self.d_x = discriminator if discriminator is not None else Discriminator()
-        self.d_y = discriminator if discriminator is not None else Discriminator()
+        self.d_y = deepcopy(discriminator) if discriminator is not None else Discriminator()
         self.loss_params = loss_params if loss_params is not None else CycleGANLossLambdaParams()
         self.adversarial_loss = nn.MSELoss()
         self.cycle_consistency_loss = nn.MSELoss()

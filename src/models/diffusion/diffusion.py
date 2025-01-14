@@ -17,20 +17,21 @@ from lightning.pytorch.callbacks import ModelCheckpoint
 from src.constants import FGNET_IMAGES_DIR, CACD_META_SEX_ANNOTATED_PATH, CACD_SPLIT_DIR
 from src.models.diffusion.sampler import DDPM
 from src.models.diffusion.unet import UNet
+from src.models.CycleGAN.cycle_gan import Generator as CycleGANGenerator
 from src.datasets.fgnet_loader import FGNETCycleGANDataset
 from src.datasets.cacd_loader import CACDCycleGANDataset
 
 
 class DiffusionModel(L.LightningModule):
     def __init__(self,
-                 generator: UNet | None = None,
+                 generator: CycleGANGenerator | None = None,
                  denoise_net: UNet | None = None,
                  sampler: DDPM | None = None,
-                 lambda_cycle: float | None = None,
+                 lambda_cycle: float = 10.0,
     ) -> None:
         super(DiffusionModel, self).__init__()
-        self.g_a_b = generator if generator is not None else UNet(in_channels=3) # in_channels 3 because in generators 1 image
-        self.g_b_a = copy.deepcopy(generator) if generator is not None else UNet(in_channels=3)
+        self.g_a_b = generator if generator is not None else CycleGANGenerator()
+        self.g_b_a = copy.deepcopy(generator) if generator is not None else CycleGANGenerator()
         self.denoise_a = denoise_net if denoise_net is not None else UNet()
         self.denoise_b = copy.deepcopy(denoise_net) if denoise_net is not None else UNet()
         self.diffusion_sampler = sampler if sampler is not None else DDPM()
@@ -49,7 +50,6 @@ class DiffusionModel(L.LightningModule):
         denoise_b_optimizer.zero_grad()
         x_a = batch["young_image"]
         x_b = batch["old_image"]
-        print(x_a.shape)
         pred_x_a = self.g_b_a(x_b, torch.tensor([0], device=self.device))
         pred_x_b = self.g_a_b(x_a, torch.tensor([0], device=self.device))
         batch_size = x_a.size(0)
