@@ -1,10 +1,15 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
+
+def align_tensor_image(x: torch.Tensor, y: torch.Tensor):
+    delta_height = y.size(2) - x.size(2)
+    delta_width = y.size(3) - x.size(3)
+    x = F.pad(x, (delta_width // 2, delta_width - delta_width // 2, delta_height // 2, delta_height - delta_height // 2))
+    return x
 
 class SinusoidalPositionalEmbedding(nn.Module):
-    # sinusoidal position encoding
-    # https://arxiv.org/pdf/1706.03762 [3.5]
     def __init__(self, emb_dim: int = 256):
         super(SinusoidalPositionalEmbedding, self).__init__()
         self.emb_dim = emb_dim
@@ -161,13 +166,17 @@ class UNet(nn.Module):
             if isinstance(layer, NormActConv) or isinstance(layer, NormActConvTranspose):
                 x = layer(x)
             elif isinstance(layer, ResnetBlock):
-                x = torch.cat([x, skip_connections.pop()], dim=1)
+                x_skip_conn = skip_connections.pop()
+                x = align_tensor_image(x, x_skip_conn)
+                x = torch.cat([x, x_skip_conn], dim=1)
                 x = layer(x, t)
             else:
                 raise ValueError("Invalid block in unet upsampling")
 
         # apply first skip connection to final upsampling layer - normactconvtranspose
-        x = torch.cat([x, skip_connections.pop()], dim=1)
+        x_skip_conn = skip_connections.pop()
+        x = align_tensor_image(x, x_skip_conn)
+        x = torch.cat([x, x_skip_conn], dim=1)
         x = self.up_layers[-1](x)
 
         return x
