@@ -50,8 +50,8 @@ class DiffusionModel(L.LightningModule):
         denoise_b_optimizer.zero_grad()
         x_a = batch["young_image"]
         x_b = batch["old_image"]
-        pred_x_a = self.g_b_a(x_b, torch.tensor([0], device=self.device))
-        pred_x_b = self.g_a_b(x_a, torch.tensor([0], device=self.device))
+        pred_x_a = self.g_b_a(x_b)
+        pred_x_b = self.g_a_b(x_a)
         batch_size = x_a.size(0)
         timestep_a = torch.randint(0, self.diffusion_sampler.n_timesteps, (batch_size,), device=self.device)
         timestep_b = torch.randint(0, self.diffusion_sampler.n_timesteps, (batch_size,), device=self.device)
@@ -137,8 +137,8 @@ class DiffusionModel(L.LightningModule):
             self.g_b_a.eval()
             x_a = batch["young_image"]
             x_b = batch["old_image"]
-            cycle_b = self.g_a_b(x_a, torch.tensor([0], device=self.device))
-            cycle_a = self.g_b_a(x_b, torch.tensor([0], device=self.device))
+            cycle_b = self.g_a_b(x_a)
+            cycle_a = self.g_b_a(x_b)
             denoised_b = self.forward(x_a)
 
         self.logger.experiment.add_image("diff_cycle_b", torchvision.utils.make_grid(self._unnormalize_output(cycle_b)), self.current_epoch)
@@ -147,47 +147,3 @@ class DiffusionModel(L.LightningModule):
 
     def _unnormalize_output(self, x: torch.Tensor) -> torch.Tensor:
         return (x * 0.5) + 0.5
-
-
-def main():
-    transform = transforms.Compose([
-        transforms.ConvertImageDtype(dtype=torch.float),
-        transforms.Resize((160, 160)),
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-    ])
-
-    dataset = FGNETCycleGANDataset(FGNET_IMAGES_DIR, transform)
-    n_valid_images = 16
-    train_size = len(dataset) - n_valid_images
-    train_set, valid_set = random_split(dataset, (train_size, n_valid_images))
-    batch_size = 8
-    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True, drop_last=True)
-    valid_loader = DataLoader(valid_set, batch_size=n_valid_images, shuffle=False, num_workers=8, pin_memory=True)
-
-    a = next(iter(train_loader))
-
-    diffusion_model = DiffusionModel(lambda_cycle=10.0)
-
-    # setup logging and checkpoints
-    val_every_n_epochs = 1
-    logger = TensorBoardLogger("tb_logs", "diffusion")
-    checkpoint_callback = ModelCheckpoint(
-        filename="diffusion_{epoch:02d}",
-        every_n_epochs=val_every_n_epochs,
-        save_top_k=-1,
-    )
-
-    diffusion_trainer = L.Trainer(
-        callbacks=[checkpoint_callback],
-        max_epochs=5,
-        default_root_dir="../models/diffusion/",
-        logger=logger,
-        log_every_n_steps=val_every_n_epochs
-        )
-    diffusion_trainer.fit(diffusion_model, train_loader)
-
-    diffusion_trainer.save_checkpoint(f"../models/diffusion_fin{datetime.now().strftime("%Y%m%d%H%M%S%z")}")
-
-
-if __name__ == "__main__":
-    main()
