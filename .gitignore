@@ -19,5 +19,6 @@ images
 removed.txt
 removed2.txt
 tb_logs
+models/
 
 model_converter.py
