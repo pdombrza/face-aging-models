@@ -12,7 +12,7 @@ from src.models.CycleGAN.cycle_gan import Generator
 from src.models.CycleGAN.train_cycle_gan import CycleGAN
 from generate_fran import imsave
 
-CHECKPOINT_PATH = "models/cycle_gan/cycle_gan1/cycle_gan_fin"
+CHECKPOINT_PATH = "models/cycle_gan/diffusion/diffusion_fin"
 
 def main():
     model = CycleGAN.load_from_checkpoint(CHECKPOINT_PATH)
@@ -20,7 +20,7 @@ def main():
     input_image = f'data/interim/synthetic_images_full/seed0002.png_23.jpg'
     transform = transforms.Compose([
         transforms.ConvertImageDtype(dtype=torch.float),
-        transforms.Resize((244, 244)),
+        transforms.Resize((180, 180)),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
     ])
     input_image_tensor = transform(read_image(input_image, mode=ImageReadMode.RGB))
@@ -34,7 +34,7 @@ def main():
     new_image_normalized  = 255 * (output - min_val) / (max_val - min_val)
     new_image_normalized = new_image_normalized.astype('uint8')
     sample_image = Image.fromarray(new_image_normalized)
-    sample_image.save(f"examples/output_image_diffusion.png")
+    sample_image.save(f"examples/output_image_cyclegan.png")
 
 if __name__ == "__main__":
     main()
