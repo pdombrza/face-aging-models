@@ -136,8 +136,8 @@ class CycleGAN(L.LightningModule):
 
     def forward(self, x_img):
         with torch.no_grad():
-            self.f.eval()
-            generated_img = self.f(x_img)
+            self.g.eval()
+            generated_img = self.g(x_img)
         return generated_img
 
     def configure_optimizers(self):

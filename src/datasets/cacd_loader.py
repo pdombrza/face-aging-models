@@ -1,15 +1,12 @@
-if __name__ == "__main__":
-    import sys
-    sys.path.append('../src')
-
 import os
 from itertools import permutations
+import pandas as pd
 from PIL import Image
 import torch
 from torch.utils.data import Dataset, DataLoader
 import torchvision.transforms as transforms
 from torchvision.io import ImageReadMode, read_image
-import pandas as pd
+from kornia.augmentation import AugmentationSequential
 from src.constants import CACD_META_SEX_ANNOTATED_PATH, CACD_SPLIT_DIR
 
 
@@ -63,8 +60,8 @@ class CACDCycleGANDataset(Dataset):
             y_lower_bound, y_upper_bound, o_lower_bound, o_upper_bound = 20, 30, 35, 45
         elif age_type == 3:
             y_lower_bound, y_upper_bound, o_lower_bound, o_upper_bound = 35, 45, 50, 60
-        self.young_images = self.metadata[(self.metadata['age'] >= y_lower_bound) & (self.metadata['age'] <= y_upper_bound)]
-        self.old_images = self.metadata[(self.metadata['age'] >= o_lower_bound) & (self.metadata['age'] <= o_upper_bound)]
+        self.young_images = self.metadata[(self.metadata['age'] >= y_lower_bound) & (self.metadata['age'] <= y_upper_bound) & (self.metadata['gender'] == 'M')]
+        self.old_images = self.metadata[(self.metadata['age'] >= o_lower_bound) & (self.metadata['age'] <= o_upper_bound) & (self.metadata['gender'] == 'M')]
         if transform is None:
             self.transform = transforms.Compose([
                 transforms.ConvertImageDtype(dtype=torch.float),
@@ -88,8 +85,12 @@ class CACDCycleGANDataset(Dataset):
         old_dir_path = os.path.join(self.img_root_dir, old_celeb_name)
         old_image = read_image(os.path.join(old_dir_path, old_img_name), mode=ImageReadMode.RGB)
 
-        young_image = self.transform(young_image)
-        old_image = self.transform(old_image)
+        if isinstance(self.transform, AugmentationSequential):
+            young_image = self.transform(young_image).squeeze()
+            old_image = self.transform(old_image, params=self.transform._params).squeeze()
+        else:
+            young_image = self.transform(young_image)
+            old_image = self.transform(old_image)
 
         return {
             "young_image": young_image,
