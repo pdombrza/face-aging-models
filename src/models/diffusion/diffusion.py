@@ -92,7 +92,6 @@ class DiffusionModel(L.LightningModule):
         self.manual_backward(loss)
         gen_optimizer.step()
 
-
         # logging
         self.log_dict(
             {
@@ -121,7 +120,6 @@ class DiffusionModel(L.LightningModule):
             self.denoise_a.eval()
             self.denoise_b.eval()
             for t in range(self.diffusion_sampler.n_timesteps - 1, -1, -1):
-                print(x_b.mean(), x_b.std())
                 if t > release_time:
                     timestep = torch.tensor([t])
                     noise_a = torch.randn(x_a.shape, device=self.device, dtype=x_a.dtype)
