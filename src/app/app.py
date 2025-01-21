@@ -18,7 +18,7 @@ class ModelManager:
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     @staticmethod
-    def setup_model(checkpoint_path: Path | str = Path("models/fran/checkpoints/fran_epoch=04.ckpt"), model_type: Model = Model.FRAN) -> torch.nn.Module:
+    def setup_model(checkpoint_path: Path | str = Path("models/fran/fran_final2.ckpt"), model_type: Model = Model.FRAN) -> torch.nn.Module:
         model = torch.load(checkpoint_path)
         if model_type == Model.FRAN:
             weights = {k.replace("generator.", "", 1): v for k, v in model["state_dict"].items() if k.startswith("generator.")}

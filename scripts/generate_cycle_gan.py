@@ -10,14 +10,14 @@ from matplotlib import pyplot as plt
 
 from src.models.CycleGAN.cycle_gan import Generator
 from src.models.CycleGAN.train_cycle_gan import CycleGAN
-from generate_fran import imsave
 
-CHECKPOINT_PATH = "models/cycle_gan/cycle_gan1/cycle_gan_fin"
+CHECKPOINT_PATH = "models/cycle_gan/cycle_gan_female_aug/cycle_gan_fin"
 
 def main():
-    model = CycleGAN.load_from_checkpoint(CHECKPOINT_PATH)
+    model = CycleGAN.load_from_checkpoint(CHECKPOINT_PATH, optimizer_params={"lr": 0.0002, "betas": (0.5, 0.999)})
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    input_image = f'data/interim/synthetic_images_full/seed0002.png_23.jpg'
+    model.to(device)
+    input_image = "data/interim/cacd_split/AlexandraDaddario/18_Alexandra_Daddario_0010.jpg"
     transform = transforms.Compose([
         transforms.ConvertImageDtype(dtype=torch.float),
         transforms.Resize((244, 244)),
@@ -34,7 +34,7 @@ def main():
     new_image_normalized  = 255 * (output - min_val) / (max_val - min_val)
     new_image_normalized = new_image_normalized.astype('uint8')
     sample_image = Image.fromarray(new_image_normalized)
-    sample_image.save(f"examples/output_image_diffusion.png")
+    sample_image.save("examples/output_image_cycle_female.png")
 
 if __name__ == "__main__":
     main()

@@ -1,9 +1,4 @@
-if __name__ == "__main__":
-    import sys
-    sys.path.append('src')
-
 import os
-
 from PIL import Image
 import numpy as np
 import torch
@@ -12,7 +7,7 @@ import torchvision.transforms as transforms
 from torchvision.io import ImageReadMode, read_image
 from matplotlib import pyplot as plt
 
-from models.FRAN.fran import Generator
+from src.models.FRAN.fran import Generator
 
 CHECKPOINT_PATH = './models/fran/checkpoints/fran_epoch=04.ckpt'
 
@@ -21,7 +16,7 @@ def imsave(img):
     npimg = img.numpy()
     npimg = np.transpose(npimg, (1, 2, 0))
     norm = (npimg - np.min(npimg)) / (np.max(npimg) - np.min(npimg))
-    plt.imsave("genarray3.png", norm)
+    plt.imsave("genarray_ryan_old.png", norm)
 
 
 def main():
@@ -40,10 +35,10 @@ def main():
         transforms.Resize((160, 160)),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
     ])
-    input_image = f'data/interim/synthetic_images_full/seed0002.png_{input_age}.jpg'
-    #input_image = "ryan_gosling.jpeg"
-    input_image_pil = Image.open(input_image).resize((160, 160))
-    input_image_pil.save(f"sample_image28.png", "PNG")
+    #input_image = f'data/interim/synthetic_images_full/seed0002.png_{input_age}.jpg'
+    input_image = "ryan_gosling.jpeg"
+    # input_image_pil = Image.open(input_image).resize((160, 160))
+    # input_image_pil.save(f"sample_image28.png", "PNG")
 
     input_image_tensor = transform(read_image(input_image, mode=ImageReadMode.RGB))
     input_age_embedding = torch.full((1, input_image_tensor.shape[1], input_image_tensor.shape[2]), input_age / 100)
@@ -56,8 +51,6 @@ def main():
         with torch.no_grad():
             output = generator_model(input_tensor.unsqueeze(0).to(device))
 
-        # print(output)
-        np_test = np.array(input_image_pil)
 
         #new_image_out = output.squeeze(0).cpu().permute(1, 2, 0).numpy()
         new_image_out = output.squeeze(0).cpu()

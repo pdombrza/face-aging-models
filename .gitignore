@@ -21,4 +21,7 @@ removed2.txt
 tb_logs
 models/
 
+fix_log.py
+get_plot_from_log.py
+
 model_converter.py
