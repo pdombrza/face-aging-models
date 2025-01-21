@@ -50,7 +50,7 @@ class FRAN(L.LightningModule):
         output = self.generator(full_input)
         predicted = input_img + output
         predicted = self._normalize_output(predicted, torch.min(predicted).item(), torch.max(predicted).item())
-        predicted_with_age = torch.cat((input_img, target_age), dim=1)
+        predicted_with_age = torch.cat((predicted, target_age), dim=1)
         real_fake_loss_h = input_img.shape[2] // (2 ** self.discriminator.num_blocks)
         real_fake_loss_w = input_img.shape[3] // (2 ** self.discriminator.num_blocks)
 

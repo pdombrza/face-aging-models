@@ -6,6 +6,8 @@ import os
 import torch
 from torch.utils.data import DataLoader, random_split
 import torchvision.transforms as transforms
+import kornia
+from kornia.augmentation import AugmentationSequential
 import lightning as L
 from lightning.pytorch.loggers import TensorBoardLogger
 from lightning.pytorch.callbacks import ModelCheckpoint, OnExceptionCheckpoint
@@ -32,11 +34,17 @@ def train(
     ckpt_load_path: Path | str | None = None,
 ):
 
-    transform = transforms.Compose([
+    transform = AugmentationSequential(
         transforms.ConvertImageDtype(dtype=torch.float),
-        transforms.Resize((img_size, img_size)) if img_size != 250 else transforms.Lambda(lambda x: x),
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-    ])
+        kornia.augmentation.RandomCrop((img_size, img_size)) if img_size != 250 else transforms.Lambda(lambda x: x),
+        kornia.augmentation.ColorJitter(p=0.5),
+        kornia.augmentation.RandomBoxBlur(p=0.1),
+        kornia.augmentation.RandomBrightness(p=0.5),
+        kornia.augmentation.RandomContrast(p=0.5),
+        kornia.augmentation.RandomAffine(degrees=(-30, 30), scale=(0.5, 1.5), p=0.6),
+        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+        same_on_batch=False,
+    )
 
     if dataset == "fgnet":
         dataset = FGNETCycleGANDataset(FGNET_IMAGES_DIR, transform)

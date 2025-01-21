@@ -5,18 +5,11 @@ import torch
 import torchvision
 import torchvision.transforms as transforms
 from torchvision.io import ImageReadMode, read_image
-from matplotlib import pyplot as plt
+from generate import imsave
 
 from src.models.FRAN.fran import Generator
 
 CHECKPOINT_PATH = './models/fran/checkpoints/fran_epoch=04.ckpt'
-
-
-def imsave(img):
-    npimg = img.numpy()
-    npimg = np.transpose(npimg, (1, 2, 0))
-    norm = (npimg - np.min(npimg)) / (np.max(npimg) - np.min(npimg))
-    plt.imsave("genarray_ryan_old.png", norm)
 
 
 def main():
@@ -55,7 +48,7 @@ def main():
         #new_image_out = output.squeeze(0).cpu().permute(1, 2, 0).numpy()
         new_image_out = output.squeeze(0).cpu()
         min_val, max_val = new_image_out.min(), new_image_out.max()
-        new_image_normalized  = 255 * (new_image_out - min_val) / (max_val - min_val)
+        new_image_normalized = 255 * (new_image_out - min_val) / (max_val - min_val)
         # new_image_normalized = new_image_normalized.astype('uint8')
         out_image_array.append(new_image_normalized)
         # print(new_image_normalized.shape)

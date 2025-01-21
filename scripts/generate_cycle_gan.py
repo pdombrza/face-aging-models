@@ -1,14 +1,8 @@
-import os
-
 from PIL import Image
-import numpy as np
 import torch
-import torchvision
 import torchvision.transforms as transforms
 from torchvision.io import ImageReadMode, read_image
-from matplotlib import pyplot as plt
 
-from src.models.CycleGAN.cycle_gan import Generator
 from src.models.CycleGAN.train_cycle_gan import CycleGAN
 
 CHECKPOINT_PATH = "models/cycle_gan/cycle_gan_female_aug/cycle_gan_fin"
@@ -31,7 +25,7 @@ def main():
 
     output = output.squeeze(0).cpu().permute(1, 2, 0).numpy()
     min_val, max_val = output.min(), output.max()
-    new_image_normalized  = 255 * (output - min_val) / (max_val - min_val)
+    new_image_normalized = 255 * (output - min_val) / (max_val - min_val)
     new_image_normalized = new_image_normalized.astype('uint8')
     sample_image = Image.fromarray(new_image_normalized)
     sample_image.save("examples/output_image_cycle_female.png")

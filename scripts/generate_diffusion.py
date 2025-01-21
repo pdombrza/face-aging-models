@@ -1,16 +1,10 @@
-import os
-
 from PIL import Image
-import numpy as np
 import torch
-import torchvision
 import torchvision.transforms as transforms
 from torchvision.io import ImageReadMode, read_image
-from matplotlib import pyplot as plt
 
-from src.models.CycleGAN.cycle_gan import Generator
 from src.models.CycleGAN.train_cycle_gan import CycleGAN
-from generate_fran import imsave
+from generate import imsave
 
 CHECKPOINT_PATH = "models/cycle_gan/diffusion/diffusion_fin"
 
@@ -31,10 +25,10 @@ def main():
 
     output = output.squeeze(0).cpu().permute(1, 2, 0).numpy()
     min_val, max_val = output.min(), output.max()
-    new_image_normalized  = 255 * (output - min_val) / (max_val - min_val)
+    new_image_normalized = 255 * (output - min_val) / (max_val - min_val)
     new_image_normalized = new_image_normalized.astype('uint8')
     sample_image = Image.fromarray(new_image_normalized)
-    sample_image.save(f"examples/output_image_cyclegan.png")
+    sample_image.save("examples/output_image_cyclegan.png")
 
 if __name__ == "__main__":
     main()
