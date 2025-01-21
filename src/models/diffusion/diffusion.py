@@ -42,12 +42,15 @@ class DiffusionModel(L.LightningModule):
         self.automatic_optimization = False
 
     def training_step(self, batch: torch.Tensor, batch_idx: int) -> None:
-        g_a_b_optimizer, g_b_a_optimizer, denoise_a_optimizer, denoise_b_optimizer = self.optimizers()
+        # g_a_b_optimizer, g_b_a_optimizer, denoise_a_optimizer, denoise_b_optimizer = self.optimizers()
 
-        g_a_b_optimizer.zero_grad()
-        g_b_a_optimizer.zero_grad()
-        denoise_a_optimizer.zero_grad()
-        denoise_b_optimizer.zero_grad()
+        # g_a_b_optimizer.zero_grad()
+        # g_b_a_optimizer.zero_grad()
+        # denoise_a_optimizer.zero_grad()
+        # denoise_b_optimizer.zero_grad()
+        gen_optimizer, denoise_optimizer = self.optimizers()
+        gen_optimizer.zero_grad()
+        denoise_optimizer.zero_grad()
         x_a = batch["young_image"]
         x_b = batch["old_image"]
         pred_x_a = self.g_b_a(x_b)
@@ -74,6 +77,9 @@ class DiffusionModel(L.LightningModule):
         denoise_loss = self.denoiser_loss(noise_a, self.denoise_a(torch.cat([noisy_x_a, noisy_pred_b.detach()], 1), timestep_a)) + \
             self.denoiser_loss(noise_b, self.denoise_b(torch.cat([noisy_x_b, noisy_pred_a.detach()], 1), timestep_b))
 
+        self.manual_backward(denoise_loss)
+        denoise_optimizer.step()
+
         dsm_loss = self.dsm_loss(noise_a, self.denoise_a(torch.cat([noisy_x_a, noisy_pred_b], 1), timestep_a)) + \
             self.dsm_loss(noise_a, self.denoise_a(torch.cat([noisy_pred_a, noisy_x_b], 1), timestep_b)) + \
             self.dsm_loss(noise_b, self.denoise_b(torch.cat([noisy_x_b, noisy_pred_a], 1), timestep_b)) + \
@@ -83,12 +89,9 @@ class DiffusionModel(L.LightningModule):
 
         loss = dsm_loss + self.lambda_cycle * cyc_loss
 
-        self.manual_backward(denoise_loss)
         self.manual_backward(loss)
-        g_a_b_optimizer.step()
-        g_b_a_optimizer.step()
-        denoise_a_optimizer.step()
-        denoise_b_optimizer.step()
+        gen_optimizer.step()
+
 
         # logging
         self.log_dict(
@@ -103,26 +106,30 @@ class DiffusionModel(L.LightningModule):
         return
 
     def configure_optimizers(self) -> list:
-        g_a_b_optimizer = optim.Adam(self.g_a_b.parameters(), lr=1e-5, betas=(0.5, 0.999))
-        g_b_a_optimizer = optim.Adam(self.g_b_a.parameters(), lr=1e-5, betas=(0.5, 0.999))
-        denoise_a_optimizer = optim.Adam(self.denoise_a.parameters(), lr=1e-5, betas=(0.5, 0.999))
-        denoise_b_optimizer = optim.Adam(self.denoise_b.parameters(), lr=1e-5, betas=(0.5, 0.999))
-        return [g_a_b_optimizer, g_b_a_optimizer, denoise_a_optimizer, denoise_b_optimizer]
+        # g_a_b_optimizer = optim.Adam(self.g_a_b.parameters(), lr=1e-5, betas=(0.5, 0.999))
+        # g_b_a_optimizer = optim.Adam(self.g_b_a.parameters(), lr=1e-5, betas=(0.5, 0.999))
+        # denoise_a_optimizer = optim.Adam(self.denoise_a.parameters(), lr=1e-5, betas=(0.5, 0.999))
+        # denoise_b_optimizer = optim.Adam(self.denoise_b.parameters(), lr=1e-5, betas=(0.5, 0.999))
+        gen_optimizer = optim.Adam(list(self.g_a_b.parameters()) + list(self.g_b_a.parameters()), lr=1e-5, betas=(0.5, 0.999))
+        denoise_optimizer = optim.Adam(list(self.denoise_a.parameters()) + list(self.denoise_b.parameters()), lr=1e-5, betas=(0.5, 0.999))
+        return [gen_optimizer, denoise_optimizer]
 
     def forward(self, x_a: torch.Tensor, release_time: int = 1) -> torch.Tensor: # inference
         x_b = torch.randn(x_a.shape, device=self.device, dtype=x_a.dtype)
+        x_a_t = self.diffusion_sampler.add_noise(x_a, torch.tensor([release_time]), torch.randn(x_a.shape, device=self.device, dtype=x_a.dtype))
         with torch.no_grad():
             self.denoise_a.eval()
             self.denoise_b.eval()
             for t in range(self.diffusion_sampler.n_timesteps - 1, -1, -1):
+                print(x_b.mean(), x_b.std())
                 if t > release_time:
                     timestep = torch.tensor([t])
                     noise_a = torch.randn(x_a.shape, device=self.device, dtype=x_a.dtype)
                     x_a = self.diffusion_sampler.add_noise(x_a, torch.tensor([t]), noise_a)
                     x_b = self.diffusion_sampler.denoise_step(x_b, timestep, self.denoise_b(torch.cat([x_b, x_a], 1), torch.tensor([t], device=self.device)))
                 else:
-                    x_a = self.diffusion_sampler.denoise_step(x_a, timestep, self.denoise_a(torch.cat([x_a, x_b], 1), torch.tensor([t], device=self.device)))
-                    x_b = self.diffusion_sampler.denoise_step(x_b, timestep, self.denoise_b(torch.cat([x_b, x_a], 1), torch.tensor([t], device=self.device)))
+                    x_b = self.diffusion_sampler.denoise_step(x_b, timestep, self.denoise_b(torch.cat([x_b, x_a_t], 1), torch.tensor([t], device=self.device)))
+                    x_a = self.diffusion_sampler.denoise_step(x_a, timestep, self.denoise_a(torch.cat([x_a_t, x_b], 1), torch.tensor([t], device=self.device)))
 
         return x_b
 
