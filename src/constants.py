@@ -1,6 +1,6 @@
 # ======================= BASE DATA PATHS =======================
 DATA_RAW_BASE_PATH = "data/raw/"
-DATA_INTERIM_BASE_PATH = "data/interim/"
+DATA_INTERIM_BASE_PATH = "data/processed/"
 
 # ========================= CACD PATHS ==========================
 CACD_IMAGES_PATH = f"{DATA_RAW_BASE_PATH}CACD2000"

@@ -27,7 +27,7 @@ class CycleGAN(L.LightningModule):
     # combines the generators and discriminators
     def __init__(
         self,
-        optimizer_params: dict,
+        optimizer_params: dict = {"lr": 0.0002, "betas": (0.5, 0.999)},
         generator: Generator | None = None,
         discriminator: Discriminator | None = None,
         loss_params: CycleGANLossLambdaParams | None = None,
@@ -134,10 +134,14 @@ class CycleGAN(L.LightningModule):
         self.logger.experiment.add_image("cycle_gan_cycle_y", torchvision.utils.make_grid(self._unnormalize_output(cycle_y)), self.current_epoch)
         self.logger.experiment.add_image("cycle_gan_cycle_x", torchvision.utils.make_grid(self._unnormalize_output(cycle_x)), self.current_epoch)
 
-    def forward(self, x_img):
+    def forward(self, x_img, reverse=False):
         with torch.no_grad():
-            self.g.eval()
-            generated_img = self.g(x_img)
+            if reverse:
+                self.f.eval()
+                generated_img = self.f(x_img)
+            else:
+                self.g.eval()
+                generated_img = self.g(x_img)
         return generated_img
 
     def configure_optimizers(self):

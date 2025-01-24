@@ -17,8 +17,6 @@ class DDPM:
         timestep = timestep.to(device=original_sample.device)
         sqrt_alpha_bars = torch.sqrt(alpha_bars[timestep]) # mean
         sqrt_one_minus_alpha_bars = torch.sqrt((1.0 - alpha_bars[timestep]))  # stdev
-        # equation (4) of the DDPM paper
-        # X = mean + stdev * Z
         noisy_samples = (sqrt_alpha_bars * original_sample) + (sqrt_one_minus_alpha_bars) * noise
         return noisy_samples
 
@@ -42,8 +40,6 @@ class DDPM:
             noise = torch.randn(image.shape, device=device, dtype=image.dtype)
             variance = torch.sqrt(self._get_variance(t)) * noise
 
-        # reparametrization trick to go from N(0, 1) to N(mu, sigma) - same as in the VAE
-        # X = mu + sigma * Z where Z ~ N(0, 1)
         pred_prev_sample += variance
         return pred_prev_sample
 
@@ -55,7 +51,6 @@ class DDPM:
         alpha_bars_t_prev = alpha_bars[prev_t] if prev_t >= 0 else torch.tensor(1.0, device=timestep.device)
         curr_beta_t = 1.0 - alpha_bars_t / alpha_bars_t_prev
 
-        # according to formulas (6) and (7) in the DDPM paper
         variance = (1 - alpha_bars_t_prev) / (1 - alpha_bars_t) * curr_beta_t
         variance = torch.clamp(variance, min=1e-20)  # make sure it doesn't reach 0
         return variance
