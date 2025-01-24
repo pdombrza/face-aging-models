@@ -4,6 +4,7 @@ from pathlib import Path
 import os
 
 import torch
+import torch.nn as nn
 from torch.utils.data import DataLoader, random_split
 import torchvision.transforms as transforms
 import lightning as L
@@ -11,6 +12,7 @@ from lightning.pytorch.loggers import TensorBoardLogger
 from lightning.pytorch.callbacks import ModelCheckpoint, OnExceptionCheckpoint
 
 from src.models.diffusion.diffusion import DiffusionModel
+from src.models.FRAN.fran import Generator
 from src.datasets.cacd_loader import CACDCycleGANDataset
 from src.datasets.fgnet_loader import FGNETCycleGANDataset
 from src.constants import FGNET_IMAGES_DIR, CACD_META_SEX_ANNOTATED_PATH, CACD_SPLIT_DIR
@@ -19,6 +21,7 @@ torch.set_float32_matmul_precision('high')
 
 def train(
     dataset: str,
+    generator: nn.Module | None = None,
     age_type: int = 1,
     lambda_cycle: float = 10.0,
     time_limit_s: int | None = None,
@@ -51,7 +54,10 @@ def train(
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True, drop_last=True)
     valid_loader = DataLoader(valid_set, batch_size=n_valid_images, shuffle=False, num_workers=8, pin_memory=True)
 
-    model = DiffusionModel(lambda_cycle=lambda_cycle)
+    if generator == 'cyclegan':
+        model = DiffusionModel(lambda_cycle=lambda_cycle)
+    elif generator == 'unet':
+        model = DiffusionModel(generator=Generator(in_channels=3), lambda_cycle=lambda_cycle)
 
     val_every_n_epochs = 1
     logger = TensorBoardLogger(log_dir, "diffusion")
@@ -84,7 +90,8 @@ def train(
 
 def main():
     parser = ArgumentParser(description="Train diffusion model.")
-    parser.add_argument("--dataset", help="Dataset to use for training. Possible options: 'cacd', 'fgnet'.", required=True)
+    parser.add_argument("--dataset", help="Dataset to use for training", choices=["fgnet", "cacd"], required=True)
+    parser.add_argument("--generator", help="Generator for translation in training.", required=True, choices=["unet", "cyclegan"], default='cyclegan')
     parser.add_argument("--age_type", type=int, help="Available age transformation intervals. 1 - 20-30->50-60, 2 - 20-30->35-45, 3 - 35-45-> 50-60. Default: 1", required=False, default=1),
     parser.add_argument("--maxtime", type=int, help="Time limit for training in seconds. Default: 86400.", required=False)
     parser.add_argument("--n_valid_images", type=int, help="Number of validation images. Default: 16", required=False, default=16)
@@ -101,7 +108,7 @@ def main():
     save_path = args.save if args.save is not None else Path("models/diffusion/")
     log_dir = args.log_dir if args.log_dir is not None else Path("models/diffusion/tb_logs")
     img_size = max(min(args.img_size, 244), 16)
-    model, trainer = train(args.dataset, args.age_type, lambda_cycle, args.maxtime, args.n_valid_images, args.epochs, args.batch, img_size, save_path, log_dir, args.ckpt_load)
+    model, trainer = train(args.dataset, args.generator, args.age_type, lambda_cycle, args.maxtime, args.n_valid_images, args.epochs, args.batch, img_size, save_path, log_dir, args.ckpt_load)
     trainer.save_checkpoint(os.path.join(save_path, f"diffusion_fin"))
 
 
