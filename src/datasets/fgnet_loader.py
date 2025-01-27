@@ -1,7 +1,3 @@
-if __name__ == "__main__":
-    import sys
-    sys.path.append('../src')
-
 import os
 from itertools import permutations
 from PIL import Image
@@ -42,10 +38,10 @@ class FGNETDataset(Dataset):
         img_name = self.images[index]
 
         # load metadata
-        img_meta = img_name.split(".")[0]
+        img_meta, ext = os.path.splitext(img_name)
         person_id = img_meta[:3]
         person_age = int(img_meta[4:6])
-        person_gender = 0 if img_meta[6] == "M" else 1
+        person_gender = 0 if img_meta[-1] == "M" else 1
         img_path = os.path.join(self.images_path, img_name)
 
         image = Image.open(img_path).convert("RGB")
@@ -57,13 +53,28 @@ class FGNETDataset(Dataset):
 
 
 class FGNETCycleGANDataset(Dataset):
-    def __init__(self, images_path, transform=None):
+    def __init__(self, images_path, age_type=1, gender_type=0, transform=None,):
         super().__init__()
         self.images_path = images_path
         self.transform = transform
         self.images = os.listdir(images_path)
-        self.young_images = list(filter(lambda x: int(x[4:6]) < 20 and int(x[4:6]) > 10, self.images))
-        self.old_images = list(filter(lambda x: int(x[4:6]) > 40, self.images))
+        if age_type == 1:
+            y_lower_bound, y_upper_bound, o_lower_bound = 20, 30, 50
+        elif age_type == 2:
+            y_lower_bound, y_upper_bound, o_lower_bound = 20, 30, 35
+        elif age_type == 3:
+            y_lower_bound, y_upper_bound, o_lower_bound = 35, 45, 50
+        gender = None
+        if gender_type == 1:
+            gender = 'M'
+        elif gender_type == 2:
+            gender = 'F'
+        else:
+            self.young_images = list(filter(lambda x: int(x[4:6]) < y_upper_bound and int(x[4:6]) > y_lower_bound, self.images))
+            self.old_images = list(filter(lambda x: int(x[4:6]) > o_lower_bound, self.images))
+        if gender is not None:
+            self.young_images = list(filter(lambda x: int(x[4:6]) < y_upper_bound and int(x[4:6]) > y_lower_bound and x[-1] == gender, self.images))
+            self.old_images = list(filter(lambda x: int(x[4:6]) > o_lower_bound and x[-1] == gender, self.images))
         if transform is None:
             self.transform = transforms.Compose([
                 transforms.ConvertImageDtype(dtype=torch.float),
@@ -72,9 +83,7 @@ class FGNETCycleGANDataset(Dataset):
             ])
         else:
             self.transform = transform
-        # min_length = len(self)
-        # self.young_images = self.young_images[:min_length]
-        # self.old_images = self.old_images[:min_length]
+
 
     def __len__(self):
         return min(len(self.young_images), len(self.old_images))
@@ -136,26 +145,3 @@ class FGNETFRANDataset(Dataset):
             "target_img": target_image,
             "target_age": age_tensor_target,
         }
-
-
-def main():
-    images_path = FGNET_IMAGES_DIR
-    transform = transforms.Compose(
-        [
-            transforms.ConvertImageDtype(dtype=torch.float),
-            transforms.Resize((256, 256)),
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-        ]
-    )
-
-    dataset = FGNETFRANDataset(images_path, transform=transform)
-
-    dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
-    res = next(iter(dataloader))
-    print(torch.min(res["input"]))
-    # image_pairs = gen_fgnet_img_pairs_fran(images_path)
-    # print(image_pairs)
-
-
-if __name__ == "__main__":
-    main()

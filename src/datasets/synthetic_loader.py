@@ -1,18 +1,11 @@
-if __name__ == "__main__":
-    import sys
-    sys.path.append('../src')
-
 import os
 from itertools import permutations
-from PIL import Image
 import torch
 from kornia.augmentation import AugmentationSequential
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 import torchvision.transforms as transforms
 from torchvision.io import ImageReadMode, read_image
-from src.constants import SYNTHETIC_IMAGES_FULL
 
-TARGET_AGES = [13, 18, 23, 28, 33, 38, 43, 48, 53, 58, 63, 68, 73, 78, 83]
 
 def gen_synthetic_img_pairs_fran(images_path):
     images = os.listdir(images_path)
@@ -73,35 +66,3 @@ class SynthFRANDataset(Dataset):
             "target_img": target_image,
             "target_age": age_tensor_target,
         }
-
-
-def main():
-    images_path = SYNTHETIC_IMAGES_FULL
-    import kornia
-    from kornia.augmentation import AugmentationSequential
-    transform = AugmentationSequential(
-        transforms.ConvertImageDtype(dtype=torch.float),
-        kornia.augmentation.RandomCrop((256, 256)),
-        kornia.augmentation.ColorJitter(p=0.5),
-        kornia.augmentation.RandomBoxBlur(p=0.1),
-        kornia.augmentation.RandomBrightness(p=0.5),
-        kornia.augmentation.RandomContrast(p=0.5),
-        kornia.augmentation.RandomAffine(degrees=(-30, 30), scale=(0.5, 1.5), p=0.6),
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-        same_on_batch=False,
-    )
-
-    dataset = SynthFRANDataset(images_path, transform=transform)
-
-    dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
-    # res = next(iter(dataloader))
-    # print(res)
-    # print(torch.min(res["input"]))
-    # image_pairs = gen_synthetic_img_pairs_fran(images_path)
-    # for image in image_pairs:
-    #     if image[0][4:8] == '1868':
-    #         print(image)
-
-
-if __name__ == "__main__":
-    main()

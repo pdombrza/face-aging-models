@@ -3,11 +3,10 @@ from itertools import permutations
 import pandas as pd
 from PIL import Image
 import torch
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 import torchvision.transforms as transforms
 from torchvision.io import ImageReadMode, read_image
 from kornia.augmentation import AugmentationSequential
-from src.constants import CACD_META_SEX_ANNOTATED_PATH, CACD_SPLIT_DIR
 
 
 def gen_cacd_img_pairs_fran(meta_df: pd.DataFrame) -> list[tuple]:
@@ -150,26 +149,3 @@ class CACDFRANDataset(Dataset):
             "target_age": age_tensor_target,
         }
 
-
-def main():
-    meta_path = CACD_META_SEX_ANNOTATED_PATH
-    meta_path = "../examples/meta_ex.csv"
-    images_dir_path = CACD_SPLIT_DIR
-    images_dir_path = "../examples/cacd_split"
-    transform = transforms.Compose(
-        [
-            transforms.ConvertImageDtype(dtype=torch.float),
-            transforms.Resize((256, 256)),
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-        ]
-    )
-
-    dataset = CACDCycleGANDataset(meta_path, images_dir_path, transform)
-    dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
-    print(len(dataset))
-    # meta_df = pd.read_csv(meta_path)
-    # print(gen_cacd_img_pairs_fran(meta_df))
-
-
-if __name__ == "__main__":
-    main()
