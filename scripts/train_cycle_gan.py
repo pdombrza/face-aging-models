@@ -23,6 +23,7 @@ torch.set_float32_matmul_precision('high')
 def train(
     dataset: str,
     age_type: int = 1,
+    gender_type: int = 0,
     loss_params: CycleGANLossLambdaParams | None = None,
     time_limit_s: int | None = None,
     n_valid_images: int = 16,
@@ -51,7 +52,7 @@ def train(
     elif dataset == "cacd":
         meta_path = CACD_META_SEX_ANNOTATED_PATH
         images_dir_path = CACD_SPLIT_DIR
-        dataset = CACDCycleGANDataset(meta_path, images_dir_path, age_type, transform)
+        dataset = CACDCycleGANDataset(meta_path, images_dir_path, age_type, gender_type, transform)
     else:
         raise ValueError("Invalid dataset. Available: 'cacd', 'fgnet'.")
 
@@ -95,8 +96,9 @@ def train(
 
 def main():
     parser = ArgumentParser(description="Train CycleGAN model.")
-    parser.add_argument("--dataset", help="Dataset to use for training. Possible options: 'cacd', 'fgnet'.", required=True)
+    parser.add_argument("--dataset", help="Dataset to use for training. Possible options:", choices=["fgnet", "cacd"], required=True)
     parser.add_argument("--age_type", type=int, help="Available age transformation intervals. 1 - 20-30->50-60, 2 - 20-30->35-45, 3 - 35-45-> 50-60. Default: 1", required=False, default=1),
+    parser.add_argument("--gender_type", type=int, help="Wether to train on a gendered dataset or not. 0 - full dataset, 1 - male only, 2 - female only. Default: 0", choices=[0, 1, 2], required=False, default=0),
     parser.add_argument("--maxtime", type=int, help="Time limit for training in seconds. Default: 86400.", required=False)
     parser.add_argument("--n_valid_images", type=int, help="Number of validation images. Default: 16", required=False, default=16)
     parser.add_argument("--epochs", type=int, help="Number of training epochs.", required=False, default=10)

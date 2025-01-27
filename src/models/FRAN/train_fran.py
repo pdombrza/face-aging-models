@@ -1,23 +1,12 @@
-if __name__ == "__main__":
-    import sys
-    sys.path.append('../src')
-
 import torch
 import torchvision
 import torch.nn as nn
 import torch.optim as optim
-import torchvision.transforms as transforms
-from torch.utils.data import DataLoader, random_split
 import lightning as L
-from lightning.pytorch.loggers import TensorBoardLogger
-from lightning.pytorch.callbacks import ModelCheckpoint
 from torchmetrics.image.lpip import LearnedPerceptualImagePatchSimilarity as LPIPS
 
 from src.models.FRAN.fran import Generator, Discriminator
 from src.models.FRAN.fran_utils import FRANLossLambdaParams
-from src.datasets.fgnet_loader import FGNETFRANDataset
-from src.datasets.cacd_loader import CACDFRANDataset
-from src.constants import FGNET_IMAGES_DIR, CACD_META_SEX_ANNOTATED_PATH, CACD_SPLIT_DIR
 
 
 class FRAN(L.LightningModule):
@@ -123,47 +112,3 @@ class FRAN(L.LightningModule):
     def _unnormalize_output(self, x: torch.Tensor) -> torch.Tensor:
         return (x * 0.5) + 0.5
 
-
-def main():
-    transform = transforms.Compose([
-        transforms.ConvertImageDtype(dtype=torch.float),
-        transforms.Resize((160, 160)),
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-    ])
-
-    meta_path = CACD_META_SEX_ANNOTATED_PATH
-    images_dir_path = CACD_SPLIT_DIR
-    # dataset = CACDFRANDataset(meta_path, images_dir_path, transform=transform)
-    dataset = FGNETFRANDataset(FGNET_IMAGES_DIR, transform)
-    n_valid_images = 16
-    train_size = len(dataset) - n_valid_images
-    train_set, valid_set = random_split(dataset, (train_size, n_valid_images))
-    batch_size = 8
-    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True, drop_last=True)
-    valid_loader = DataLoader(valid_set, batch_size=n_valid_images, shuffle=False, num_workers=8, pin_memory=True)
-
-    loss_params = FRANLossLambdaParams()
-    fran_model = FRAN(Generator(in_channels=5), Discriminator(in_channels=4), loss_params)
-
-    # setup logging and checkpoints
-    val_every_n_epochs = 1
-    logger = TensorBoardLogger("tb_logs", "fran")
-    checkpoint_callback = ModelCheckpoint(
-        filename="fran_{epoch:02d}",
-        every_n_epochs=val_every_n_epochs,
-        save_top_k=-1,
-    )
-
-    fran_trainer = L.Trainer(
-        callbacks=[checkpoint_callback],
-        max_epochs=15,
-        max_time='00:03:00:00',
-        default_root_dir="../models/fran/",
-        logger=logger
-        )
-    fran_trainer.fit(fran_model, train_loader, valid_loader)
-    fran_trainer.save_checkpoint("../models/fran/fran_fin")
-
-
-if __name__ == "__main__":
-    main()

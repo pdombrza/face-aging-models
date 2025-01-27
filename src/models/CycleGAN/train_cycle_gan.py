@@ -1,26 +1,14 @@
-if __name__ == "__main__":
-    import sys
-    sys.path.append('../src')
-
-from datetime import datetime
 from copy import deepcopy
 
 import torch
 import torchvision
 import torch.nn as nn
 import torch.optim as optim
-import torchvision.transforms as transforms
-from torch.utils.data import DataLoader, random_split
 from matplotlib import pyplot as plt
 import lightning as L
-from lightning.pytorch.loggers import TensorBoardLogger
-from lightning.pytorch.callbacks import ModelCheckpoint, OnExceptionCheckpoint
 
 from src.models.CycleGAN.cycle_gan import Discriminator, Generator
 from src.models.CycleGAN.cycle_gan_utils import CycleGANLossLambdaParams
-from src.constants import FGNET_IMAGES_DIR, CACD_META_SEX_ANNOTATED_PATH, CACD_SPLIT_DIR
-#from datasets.fgnet_loader import FGNETCycleGANDataset
-from src.datasets.cacd_loader import CACDCycleGANDataset
 
 
 class CycleGAN(L.LightningModule):
@@ -153,26 +141,3 @@ class CycleGAN(L.LightningModule):
 
     def _unnormalize_output(self, x):
         return (x * 0.5) + 0.5
-
-
-def visualize_images(input_images: torch.Tensor, aged_images: torch.Tensor, reconstruct: bool = True, save: bool = False, save_path: bool = None) -> None:
-    if reconstruct:
-        imgs = torch.stack([input_images, aged_images], dim=1).flatten(0,1)
-        imgs = imgs / 2 + 0.5
-        title = "Age progression"
-        grid = torchvision.utils.make_grid(imgs, nrow=4, normalize=False, value_range=(-1,1))
-    grid = grid.permute(1, 2, 0)
-    if len(input_images) == 4:
-        plt.figure(figsize=(10, 10))
-    else:
-        plt.figure(figsize=(15, 10))
-    plt.title(title)
-    plt.imshow(grid)
-    plt.axis('off')
-    if save:
-        if save_path is None:
-            plt.savefig('temp_path.jpg')
-        else:
-            plt.savefig(save_path)
-    else:
-        plt.show()

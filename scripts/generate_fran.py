@@ -5,11 +5,11 @@ import torch
 import torchvision
 import torchvision.transforms as transforms
 from torchvision.io import ImageReadMode, read_image
-from generate import imsave
+from scripts.generate import imsave
 
 from src.models.FRAN.fran import Generator
 
-CHECKPOINT_PATH = './models/fran/checkpoints/fran_epoch=04.ckpt'
+CHECKPOINT_PATH = './models/fran/fran_final2.ckpt'
 
 
 def main():
@@ -25,11 +25,11 @@ def main():
     input_age = 43
     transform = transforms.Compose([
         transforms.ConvertImageDtype(dtype=torch.float),
-        transforms.Resize((160, 160)),
+        transforms.Resize((512, 512)),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
     ])
     #input_image = f'data/interim/synthetic_images_full/seed0002.png_{input_age}.jpg'
-    input_image = "ryan_gosling.jpeg"
+    input_image = "anne_hathaway_test.png"
     # input_image_pil = Image.open(input_image).resize((160, 160))
     # input_image_pil.save(f"sample_image28.png", "PNG")
 
@@ -56,7 +56,7 @@ def main():
         # new_image = (new_image_normalized + np.array(input_image_pil)).astype('uint8')
         # sample_image = Image.fromarray(new_image_normalized)
         # sample_image.save(f"examples/output_image{target_age}.png", "PNG")
-    imsave(torchvision.utils.make_grid(out_image_array, nrow=len(out_image_array) // 3))
+    imsave(torchvision.utils.make_grid(out_image_array, nrow=len(out_image_array) // 3), "examples/anne_hathaway_test_array.png")
 
     return
 

@@ -4,17 +4,18 @@ import torchvision.transforms as transforms
 from torchvision.io import ImageReadMode, read_image
 
 from src.models.diffusion.diffusion import DiffusionModel
+from src.models.FRAN.fran import Generator
 
-CHECKPOINT_PATH = "models/diffusion_test2/diffusion_fin"
+CHECKPOINT_PATH = "models/diffusion_test3/diffusion_epoch=12.ckpt"
 
 def main():
-    model = DiffusionModel.load_from_checkpoint(CHECKPOINT_PATH)
+    model = DiffusionModel.load_from_checkpoint(CHECKPOINT_PATH, generator=Generator(in_channels=3))
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model.to(device)
-    input_image = "data/interim/cacd_split/AaronPaul/25_Aaron_Paul_0001.jpg"
+    input_image = "data/processed/cacd_split/AaronPaul/25_Aaron_Paul_0001.jpg"
     transform = transforms.Compose([
         transforms.ConvertImageDtype(dtype=torch.float),
-        transforms.Resize((64, 64)),
+        transforms.Resize((128, 128)),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
     ])
     input_image_tensor = transform(read_image(input_image, mode=ImageReadMode.RGB))

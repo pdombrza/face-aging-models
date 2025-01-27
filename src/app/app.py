@@ -5,9 +5,9 @@ import gradio as gr
 from PIL import Image
 import torch
 import torchvision.transforms as transforms
-from models.FRAN.fran import Generator
-from models.CycleGAN.train_cycle_gan import CycleGAN
-from models.diffusion.diffusion import DiffusionModel
+from src.models.FRAN.fran import Generator
+from src.models.CycleGAN.train_cycle_gan import CycleGAN
+from src.models.diffusion.diffusion import DiffusionModel
 
 
 class Model(Enum):
@@ -36,7 +36,7 @@ class ModelManager:
         return generator_model
 
     @staticmethod
-    def get_model(model_type: str | Model, checkpoint_path: Path | str = Path("models/fran/checkpoints/fran_epoch=04.ckpt")) -> torch.nn.Module:
+    def get_model(model_type: str | Model, checkpoint_path: Path | str = Path("models/fran/fran_final2.ckpt")) -> torch.nn.Module:
         if model_type not in ModelManager.cache:
             ModelManager.cache[model_type] = ModelManager.setup_model(model_type, checkpoint_path)
         return ModelManager.cache[model_type]
@@ -45,7 +45,7 @@ class ModelManager:
 def images_to_gif(images):
     path = Path("examples/temp.gif")
     images[0].save(
-        path, format="GIF", save_all=True, append_images=images[1:], loop=0, fps=24
+        path, format="GIF", save_all=True, append_images=images[1:], loop=0, fps=45
     )
     return path
 
@@ -57,7 +57,7 @@ def prep_image_to_pil(image):
 
 def generate_output(input_image, input_age, input_gender, model_type):
     if model_type == "FRAN":
-        model = ModelManager.get_model(model_type)
+        model = ModelManager.get_model(Model(model_type))
         model.eval()
         target_ages = [13, 18, 23, 33, 38, 48, 53, 58, 63, 68, 73, 78]
         transform = transforms.Compose([
@@ -78,13 +78,13 @@ def generate_output(input_image, input_age, input_gender, model_type):
         return gif
     elif model_type == "CycleGAN":
         if input_gender.lower() == "male":
-            cyclegan1 = ModelManager.cache.setdefault("cyclegan1_male", ModelManager.setup_model(model_type, Path("models/cycle_gan/cycle_gan_male_aug1/cycle_gan_fin")))
-            cyclegan2 = ModelManager.cache.setdefault("cyclegan2_male", ModelManager.setup_model(model_type, Path("models/cycle_gan/cycle_gan_male_aug2/cycle_gan_fin")))
-            cyclegan3 = ModelManager.cache.setdefault("cyclegan3_male", ModelManager.setup_model(model_type, Path("models/cycle_gan/cycle_gan_male_aug2/cycle_gan_fin")))
+            cyclegan1 = ModelManager.cache.setdefault("cyclegan1_male", ModelManager.setup_model(Model(model_type), Path("models/cycle_gan/cycle_gan_male_aug1/cycle_gan_fin")))
+            cyclegan2 = ModelManager.cache.setdefault("cyclegan2_male", ModelManager.setup_model(Model(model_type), Path("models/cycle_gan/cycle_gan_male_aug2/cycle_gan_fin")))
+            cyclegan3 = ModelManager.cache.setdefault("cyclegan3_male", ModelManager.setup_model(Model(model_type), Path("models/cycle_gan/cycle_gan_male_aug2/cycle_gan_fin")))
         else:
-            cyclegan1 = ModelManager.cache.setdefault("cyclegan1_female", ModelManager.setup_model(model_type, Path("models/cycle_gan/cycle_gan_female_aug1/cycle_gan_fin")))
-            cyclegan2 = ModelManager.cache.setdefault("cyclegan2_female", ModelManager.setup_model(model_type, Path("models/cycle_gan/cycle_gan_female_aug2/cycle_gan_fin")))
-            cyclegan3 = ModelManager.cache.setdefault("cyclegan3_female", ModelManager.setup_model(model_type, Path("models/cycle_gan/cycle_gan_female_aug2/cycle_gan_fin")))
+            cyclegan1 = ModelManager.cache.setdefault("cyclegan1_female", ModelManager.setup_model(Model(model_type), Path("models/cycle_gan/cycle_gan_female_aug1/cycle_gan_fin")))
+            cyclegan2 = ModelManager.cache.setdefault("cyclegan2_female", ModelManager.setup_model(Model(model_type), Path("models/cycle_gan/cycle_gan_female_aug2/cycle_gan_fin")))
+            cyclegan3 = ModelManager.cache.setdefault("cyclegan3_female", ModelManager.setup_model(Model(model_type), Path("models/cycle_gan/cycle_gan_female_aug2/cycle_gan_fin")))
         cyclegan1.eval()
         cyclegan2.eval()
         cyclegan3.eval()
