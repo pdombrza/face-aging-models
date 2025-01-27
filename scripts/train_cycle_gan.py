@@ -116,7 +116,7 @@ def main():
     save_path = args.save if args.save is not None else Path("models/cycle_gan/")
     log_dir = args.log_dir if args.log_dir is not None else Path("models/cycle_gan/tb_logs")
     img_size = max(min(args.img_size, 244), 16)
-    model, trainer = train(args.dataset, args.age_type, loss_params, args.maxtime, args.n_valid_images, args.epochs, args.batch, img_size, save_path, log_dir, args.ckpt_load)
+    model, trainer = train(args.dataset, args.age_type, args.gender_type, loss_params, args.maxtime, args.n_valid_images, args.epochs, args.batch, img_size, save_path, log_dir, args.ckpt_load)
     trainer.save_checkpoint(os.path.join(save_path, f"cycle_gan_fin"))
 
 

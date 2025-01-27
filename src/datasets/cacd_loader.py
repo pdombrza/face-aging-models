@@ -60,6 +60,7 @@ class CACDCycleGANDataset(Dataset):
             y_lower_bound, y_upper_bound, o_lower_bound, o_upper_bound = 20, 30, 35, 45
         elif age_type == 3:
             y_lower_bound, y_upper_bound, o_lower_bound, o_upper_bound = 35, 45, 50, 60
+        gender = None
         if gender_type == 1:
             gender = 'M'
         elif gender_type == 2:
@@ -67,8 +68,9 @@ class CACDCycleGANDataset(Dataset):
         else:
             self.young_images = self.metadata[(self.metadata['age'] >= y_lower_bound) & (self.metadata['age'] <= y_upper_bound)]
             self.old_images = self.metadata[(self.metadata['age'] >= o_lower_bound) & (self.metadata['age'] <= o_upper_bound)]
-        self.young_images = self.metadata[(self.metadata['age'] >= y_lower_bound) & (self.metadata['age'] <= y_upper_bound) & (self.metadata['gender'] == gender)]
-        self.old_images = self.metadata[(self.metadata['age'] >= o_lower_bound) & (self.metadata['age'] <= o_upper_bound) & (self.metadata['gender'] == gender)]
+        if gender is not None:
+            self.young_images = self.metadata[(self.metadata['age'] >= y_lower_bound) & (self.metadata['age'] <= y_upper_bound) & (self.metadata['gender'] == gender)]
+            self.old_images = self.metadata[(self.metadata['age'] >= o_lower_bound) & (self.metadata['age'] <= o_upper_bound) & (self.metadata['gender'] == gender)]
         if transform is None:
             self.transform = transforms.Compose([
                 transforms.ConvertImageDtype(dtype=torch.float),
