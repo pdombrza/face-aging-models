@@ -105,7 +105,7 @@ def main():
     loss_params = FRANLossLambdaParams(args.lambda_l1, args.lambda_lpips, args.lambda_adv)
     save_path = args.save if args.save is not None else Path("models/fran/")
     log_dir = args.log_dir if args.log_dir is not None else Path("models/fran/tb_logs")
-    model, trainer = train(args.dataset, loss_params, args.maxtime, args.n_valid_images, args.epochs, args.batch, args.img_size, log_dir, args.ckpt_load)
+    model, trainer = train(args.dataset, loss_params, args.maxtime, args.n_valid_images, args.epochs, args.batch, args.img_size, save_path, log_dir, args.ckpt_load)
     trainer.save_checkpoint(save_path)
 
 

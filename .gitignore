@@ -25,5 +25,6 @@ models/
 fix_log.py
 get_plot_from_log.py
 remove_quotation_marks.py
+filter_cacd.py
 
 model_converter.py

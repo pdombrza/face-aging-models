@@ -20,7 +20,7 @@ elif [[ $DATASET_NAME == "cacd" ]]; then
     curl -L -o data/cacd-split.zip ${DATASETS[$DATASET_NAME]}
     unzip -q data/cacd-split.zip -d data/processed/
     mv data/processed/cacd_split/cacd_split/* data/processed/cacd_split
-    rmdir data/pocessed/cacd_split/cacd_split
+    rmdir data/processed/cacd_split/cacd_split
     mkdir -p data/processed/cacd_meta
     mv data/processed/CACD_features_sex.csv data/processed/cacd_meta
 else

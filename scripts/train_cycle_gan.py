@@ -48,6 +48,11 @@ def train(
     )
 
     if dataset == "fgnet":
+        transform = transforms.Compose([
+            transforms.ConvertImageDtype(dtype=torch.float),
+            transforms.Resize((img_size, img_size)),
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+        ])
         dataset = FGNETCycleGANDataset(FGNET_IMAGES_DIR, age_type, gender_type, transform)
     elif dataset == "cacd":
         meta_path = CACD_META_SEX_ANNOTATED_PATH
