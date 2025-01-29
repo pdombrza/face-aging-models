@@ -7,28 +7,21 @@ DATASETS=(
     ["fgnet"]="https://www.kaggle.com/api/v1/datasets/download/pdombrza/fgnet-gendered"
 )
 
-if [ -z "$1" ]; then
-    echo "Usage: $0 <dataset_name>"
-    echo "Available datasets:"
-    for key in "${!DATASETS[@]}"; do
-        echo "  - $key"
-    done
-    exit 1
-fi
-
 DATASET_NAME=$1
 
-if [ DATASET_NAME == "synthetic" ]; then
+if [[ DATASET_NAME == "synthetic" ]]; then
     curl -L -o data/synthetic-aged-images.zip ${DATASETS[$DATASET_NAME]}
     unzip -q data/synthetic-aged-images.zip -d data/processed/
     mv data/processed/out data/processed/synthetic_images_full
     exit 0
-elif [ DATASET_NAME == "fgnet" ]; then
+elif [[ DATASET_NAME == "fgnet" ]]; then
     curl -L -o data/fgnet.zip ${DATASETS[$DATASET_NAME]}
     unzip -q data/synthetic-aged-images.zip -d data/processed/
-elif [ DATASET_NAME == "cacd" ]; then
+elif [[ DATASET_NAME == "cacd" ]]; then
     curl -L -o data/cacd-split.zip ${DATASETS[$DATASET_NAME]}
     unzip -q data/cacd-split.zip -d data/processed/
+    mv data/processed/cacd_split/cacd_split/* data/processed/cacd_split
+    rmdir data/pocessed/cacd_split/cacd_split
     mkdir -p data/processed/cacd_meta
     mv data/processed/CACD_features_sex.csv data/processed/cacd_meta
 else

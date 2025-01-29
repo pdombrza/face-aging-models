@@ -2,10 +2,10 @@ import os
 from itertools import permutations
 from PIL import Image
 import torch
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 import torchvision.transforms as transforms
 from torchvision.io import ImageReadMode, read_image
-from src.constants import FGNET_IMAGES_DIR
+from kornia.augmentation import AugmentationSequential
 
 
 def gen_fgnet_img_pairs_fran(images_path):
@@ -53,17 +53,19 @@ class FGNETDataset(Dataset):
 
 
 class FGNETCycleGANDataset(Dataset):
-    def __init__(self, images_path, age_type=1, gender_type=0, transform=None,):
+    def __init__(self, images_path, age_type=1, gender_type=0, transform=None):
         super().__init__()
         self.images_path = images_path
         self.transform = transform
         self.images = os.listdir(images_path)
         if age_type == 1:
-            y_lower_bound, y_upper_bound, o_lower_bound = 20, 30, 50
+            y_lower_bound, y_upper_bound, o_lower_bound, o_upper_bound = 15, 25, 40, 100
         elif age_type == 2:
-            y_lower_bound, y_upper_bound, o_lower_bound = 20, 30, 35
+            y_lower_bound, y_upper_bound, o_lower_bound, o_upper_bound = 15, 25, 25, 40
         elif age_type == 3:
-            y_lower_bound, y_upper_bound, o_lower_bound = 35, 45, 50
+            y_lower_bound, y_upper_bound, o_lower_bound, o_upper_bound = 25, 40, 40, 100
+        else:
+            raise ValueError("Invalid age type. Available: 1, 2, 3")
         gender = None
         if gender_type == 1:
             gender = 'M'
@@ -71,10 +73,10 @@ class FGNETCycleGANDataset(Dataset):
             gender = 'F'
         else:
             self.young_images = list(filter(lambda x: int(x[4:6]) < y_upper_bound and int(x[4:6]) > y_lower_bound, self.images))
-            self.old_images = list(filter(lambda x: int(x[4:6]) > o_lower_bound, self.images))
+            self.old_images = list(filter(lambda x: int(x[4:6]) > o_lower_bound and int(x[4:6]) < o_upper_bound, self.images))
         if gender is not None:
-            self.young_images = list(filter(lambda x: int(x[4:6]) < y_upper_bound and int(x[4:6]) > y_lower_bound and x[-1] == gender, self.images))
-            self.old_images = list(filter(lambda x: int(x[4:6]) > o_lower_bound and x[-1] == gender, self.images))
+            self.young_images = list(filter(lambda x: int(x[4:6]) < y_upper_bound and int(x[4:6]) > y_lower_bound and os.path.splitext(x)[0][-1] == gender, self.images))
+            self.old_images = list(filter(lambda x: int(x[4:6]) > o_lower_bound and int(x[4:6]) < o_upper_bound and os.path.splitext(x)[0][-1] == gender, self.images))
         if transform is None:
             self.transform = transforms.Compose([
                 transforms.ConvertImageDtype(dtype=torch.float),
@@ -98,8 +100,12 @@ class FGNETCycleGANDataset(Dataset):
             mode=ImageReadMode.RGB,
         )
 
-        young_image = self.transform(young_image)
-        old_image = self.transform(old_image)
+        if isinstance(self.transform, AugmentationSequential):
+            young_image = self.transform(young_image).squeeze()
+            old_image = self.transform(old_image, params=self.transform._params).squeeze()
+        else:
+            young_image = self.transform(young_image)
+            old_image = self.transform(old_image)
 
         return {
             "young_image": young_image,
