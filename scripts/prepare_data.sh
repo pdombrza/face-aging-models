@@ -13,10 +13,9 @@ if [[ DATASET_NAME == "synthetic" ]]; then
     curl -L -o data/synthetic-aged-images.zip ${DATASETS[$DATASET_NAME]}
     unzip -q data/synthetic-aged-images.zip -d data/processed/
     mv data/processed/out data/processed/synthetic_images_full
-    exit 0
 elif [[ DATASET_NAME == "fgnet" ]]; then
     curl -L -o data/fgnet.zip ${DATASETS[$DATASET_NAME]}
-    unzip -q data/synthetic-aged-images.zip -d data/processed/
+    unzip -q data/fgnet.zip -d data/processed/
 elif [[ DATASET_NAME == "cacd" ]]; then
     curl -L -o data/cacd-split.zip ${DATASETS[$DATASET_NAME]}
     unzip -q data/cacd-split.zip -d data/processed/
