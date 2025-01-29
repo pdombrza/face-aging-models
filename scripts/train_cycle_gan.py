@@ -48,7 +48,7 @@ def train(
     )
 
     if dataset == "fgnet":
-        dataset = FGNETCycleGANDataset(FGNET_IMAGES_DIR, transform)
+        dataset = FGNETCycleGANDataset(FGNET_IMAGES_DIR, age_type, gender_type, transform)
     elif dataset == "cacd":
         meta_path = CACD_META_SEX_ANNOTATED_PATH
         images_dir_path = CACD_SPLIT_DIR

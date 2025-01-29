@@ -17,7 +17,8 @@ CACD_MAT_COLUMNS = ("age", "identity", "year", "feature", "rank", "lfw", "birth"
 CACD_CSV_PATH = f"{DATA_INTERIM_BASE_PATH}cacd_meta/CACD_features.csv"
 
 # ========================= FGNET PATHS =========================
-FGNET_IMAGES_DIR = f"{DATA_RAW_BASE_PATH}FGNET/FGNET/images"
+FGNET_BASE_DIR = f"{DATA_RAW_BASE_PATH}FGNET/FGNET/images"
+FGNET_IMAGES_DIR = f"{DATA_INTERIM_BASE_PATH}fgnet_gendered"
 FGNET_INDIVIDUALS_DIR = f"{DATA_RAW_BASE_PATH}FGNET/FGNET/individuals"
 
 

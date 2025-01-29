@@ -1,25 +1,13 @@
-if __name__ == "__main__":
-    import sys
-    sys.path.append('../src')
-
 import copy
-from datetime import datetime
 import torch
 import torchvision
 import torch.optim as optim
 import torch.nn as nn
-import torchvision.transforms as transforms
 import lightning as L
-from torch.utils.data import DataLoader, random_split
-from lightning.pytorch.loggers import TensorBoardLogger
-from lightning.pytorch.callbacks import ModelCheckpoint
 
-from src.constants import FGNET_IMAGES_DIR, CACD_META_SEX_ANNOTATED_PATH, CACD_SPLIT_DIR
 from src.models.diffusion.sampler import DDPM
 from src.models.diffusion.unet import UNet
 from src.models.CycleGAN.cycle_gan import Generator as CycleGANGenerator
-from src.datasets.fgnet_loader import FGNETCycleGANDataset
-from src.datasets.cacd_loader import CACDCycleGANDataset
 
 
 class DiffusionModel(L.LightningModule):
@@ -42,12 +30,6 @@ class DiffusionModel(L.LightningModule):
         self.automatic_optimization = False
 
     def training_step(self, batch: torch.Tensor, batch_idx: int) -> None:
-        # g_a_b_optimizer, g_b_a_optimizer, denoise_a_optimizer, denoise_b_optimizer = self.optimizers()
-
-        # g_a_b_optimizer.zero_grad()
-        # g_b_a_optimizer.zero_grad()
-        # denoise_a_optimizer.zero_grad()
-        # denoise_b_optimizer.zero_grad()
         gen_optimizer, denoise_optimizer = self.optimizers()
         gen_optimizer.zero_grad()
         denoise_optimizer.zero_grad()
@@ -105,10 +87,6 @@ class DiffusionModel(L.LightningModule):
         return
 
     def configure_optimizers(self) -> list:
-        # g_a_b_optimizer = optim.Adam(self.g_a_b.parameters(), lr=1e-5, betas=(0.5, 0.999))
-        # g_b_a_optimizer = optim.Adam(self.g_b_a.parameters(), lr=1e-5, betas=(0.5, 0.999))
-        # denoise_a_optimizer = optim.Adam(self.denoise_a.parameters(), lr=1e-5, betas=(0.5, 0.999))
-        # denoise_b_optimizer = optim.Adam(self.denoise_b.parameters(), lr=1e-5, betas=(0.5, 0.999))
         gen_optimizer = optim.Adam(list(self.g_a_b.parameters()) + list(self.g_b_a.parameters()), lr=1e-5, betas=(0.5, 0.999))
         denoise_optimizer = optim.Adam(list(self.denoise_a.parameters()) + list(self.denoise_b.parameters()), lr=1e-5, betas=(0.5, 0.999))
         return [gen_optimizer, denoise_optimizer]
