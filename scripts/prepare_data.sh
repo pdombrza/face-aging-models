@@ -9,14 +9,14 @@ DATASETS=(
 
 DATASET_NAME=$1
 
-if [[ DATASET_NAME == "synthetic" ]]; then
+if [[ $DATASET_NAME == "synthetic" ]]; then
     curl -L -o data/synthetic-aged-images.zip ${DATASETS[$DATASET_NAME]}
     unzip -q data/synthetic-aged-images.zip -d data/processed/
     mv data/processed/out data/processed/synthetic_images_full
-elif [[ DATASET_NAME == "fgnet" ]]; then
+elif [[ $DATASET_NAME == "fgnet" ]]; then
     curl -L -o data/fgnet.zip ${DATASETS[$DATASET_NAME]}
     unzip -q data/fgnet.zip -d data/processed/
-elif [[ DATASET_NAME == "cacd" ]]; then
+elif [[ $DATASET_NAME == "cacd" ]]; then
     curl -L -o data/cacd-split.zip ${DATASETS[$DATASET_NAME]}
     unzip -q data/cacd-split.zip -d data/processed/
     mv data/processed/cacd_split/cacd_split/* data/processed/cacd_split
