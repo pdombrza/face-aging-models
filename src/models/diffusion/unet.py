@@ -9,6 +9,7 @@ def align_tensor_image(x: torch.Tensor, y: torch.Tensor):
     x = F.pad(x, (delta_width // 2, delta_width - delta_width // 2, delta_height // 2, delta_height - delta_height // 2))
     return x
 
+
 class SinusoidalPositionalEmbedding(nn.Module):
     def __init__(self, emb_dim: int = 256):
         super(SinusoidalPositionalEmbedding, self).__init__()
@@ -41,7 +42,7 @@ class ResnetBlock(nn.Module):
             nn.SiLU(inplace=True),
         )
 
-        self.time_feature_block = nn.Sequential( # from SD
+        self.time_feature_block = nn.Sequential(  # from SD
             nn.Conv2d(out_channels, out_channels, kernel_size=1, padding=0),
             nn.BatchNorm2d(out_channels),
             nn.SiLU(inplace=True),
@@ -51,7 +52,7 @@ class ResnetBlock(nn.Module):
         residue = x
         x = self.feature_block(x)
         time = self.time_block(time)
-        time_feature = x + time.unsqueeze(-1).unsqueeze(-1) # need to check dimensions cause unsure but likely time has shape B x out_ch, and x has B x C x H x W
+        time_feature = x + time.unsqueeze(-1).unsqueeze(-1)
         time_feature = self.time_feature_block(time_feature)
         time_feature += residue
         return time_feature
@@ -87,7 +88,7 @@ class NormActConvTranspose(nn.Module):
 
 class UNet(nn.Module):
     # https://arxiv.org/pdf/2104.05358 [Figure 4.],
-    def __init__(self, in_channels: int = 6, starting_down_channels: int = 64, t_emb_dim: int = 256): # 6 in_channels because 2 starting images in denoise fn
+    def __init__(self, in_channels: int = 6, starting_down_channels: int = 64, t_emb_dim: int = 256):
         super(UNet, self).__init__()
         self.down_ch = starting_down_channels
         self.time_emb_mlp_layer = nn.Sequential(
@@ -141,9 +142,8 @@ class UNet(nn.Module):
             NormActConvTranspose(in_channels=2 * self.up_ch, out_channels=3)
         ]
 
-
     def forward(self, x: torch.Tensor, timestep: torch.Tensor) -> torch.Tensor:
-        t = self.time_emb_mlp_layer(timestep)  # prepare time for sinusoidal positional embedding
+        t = self.time_emb_mlp_layer(timestep)
         skip_connections = []
         for layer in self.down_layers:
             if isinstance(layer, NormActConv):

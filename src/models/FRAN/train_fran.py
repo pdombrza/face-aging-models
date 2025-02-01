@@ -111,4 +111,3 @@ class FRAN(L.LightningModule):
 
     def _unnormalize_output(self, x: torch.Tensor) -> torch.Tensor:
         return (x * 0.5) + 0.5
-

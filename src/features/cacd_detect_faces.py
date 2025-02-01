@@ -1,13 +1,9 @@
-if __name__ == "__main__":
-    import sys
-    sys.path.append('../src')
-
 from facenet_pytorch import MTCNN, InceptionResnetV1
 from sklearn.cluster import DBSCAN
 from PIL import Image
 import numpy as np
 import os
-from constants import CACD_SPLIT_DIR
+from src.constants import CACD_SPLIT_DIR
 
 
 def get_face_embedding(img_path, detector, resnet):
@@ -22,7 +18,7 @@ def get_face_embedding(img_path, detector, resnet):
 def detect():
     cacd_img_size = 250
     mtcnn = MTCNN(image_size=cacd_img_size, margin=0)
-    resnet = InceptionResnetV1(pretrained='vggface2').eval()
+    resnet = InceptionResnetV1(pretrained="vggface2").eval()
     img_dir = f"{CACD_SPLIT_DIR}/50Cent"
     embeddings = []
     img_paths = []
@@ -34,7 +30,7 @@ def detect():
 
 
 def cluster(embeddings):
-    clustering_model = DBSCAN(eps=0.6, min_samples=1, metric='euclidean')
+    clustering_model = DBSCAN(eps=0.6, min_samples=1, metric="euclidean")
     labels = clustering_model.fit_predict(embeddings)
     return labels
 
@@ -61,5 +57,5 @@ def main():
     print_labels()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

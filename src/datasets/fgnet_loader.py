@@ -68,24 +68,51 @@ class FGNETCycleGANDataset(Dataset):
             raise ValueError("Invalid age type. Available: 1, 2, 3")
         gender = None
         if gender_type == 1:
-            gender = 'M'
+            gender = "M"
         elif gender_type == 2:
-            gender = 'F'
+            gender = "F"
         else:
-            self.young_images = list(filter(lambda x: int(x[4:6]) < y_upper_bound and int(x[4:6]) > y_lower_bound, self.images))
-            self.old_images = list(filter(lambda x: int(x[4:6]) > o_lower_bound and int(x[4:6]) < o_upper_bound, self.images))
+            self.young_images = list(
+                filter(
+                    lambda x: int(x[4:6]) < y_upper_bound
+                    and int(x[4:6]) > y_lower_bound,
+                    self.images,
+                )
+            )
+            self.old_images = list(
+                filter(
+                    lambda x: int(x[4:6]) > o_lower_bound
+                    and int(x[4:6]) < o_upper_bound,
+                    self.images,
+                )
+            )
         if gender is not None:
-            self.young_images = list(filter(lambda x: int(x[4:6]) < y_upper_bound and int(x[4:6]) > y_lower_bound and os.path.splitext(x)[0][-1] == gender, self.images))
-            self.old_images = list(filter(lambda x: int(x[4:6]) > o_lower_bound and int(x[4:6]) < o_upper_bound and os.path.splitext(x)[0][-1] == gender, self.images))
+            self.young_images = list(
+                filter(
+                    lambda x: int(x[4:6]) < y_upper_bound
+                    and int(x[4:6]) > y_lower_bound
+                    and os.path.splitext(x)[0][-1] == gender,
+                    self.images,
+                )
+            )
+            self.old_images = list(
+                filter(
+                    lambda x: int(x[4:6]) > o_lower_bound
+                    and int(x[4:6]) < o_upper_bound
+                    and os.path.splitext(x)[0][-1] == gender,
+                    self.images,
+                )
+            )
         if transform is None:
-            self.transform = transforms.Compose([
-                transforms.ConvertImageDtype(dtype=torch.float),
-                transforms.Resize((160, 160)),
-                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-            ])
+            self.transform = transforms.Compose(
+                [
+                    transforms.ConvertImageDtype(dtype=torch.float),
+                    transforms.Resize((160, 160)),
+                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+                ]
+            )
         else:
             self.transform = transform
-
 
     def __len__(self):
         return min(len(self.young_images), len(self.old_images))
@@ -102,7 +129,9 @@ class FGNETCycleGANDataset(Dataset):
 
         if isinstance(self.transform, AugmentationSequential):
             young_image = self.transform(young_image).squeeze()
-            old_image = self.transform(old_image, params=self.transform._params).squeeze()
+            old_image = self.transform(
+                old_image, params=self.transform._params
+            ).squeeze()
         else:
             young_image = self.transform(young_image)
             old_image = self.transform(old_image)
@@ -119,11 +148,13 @@ class FGNETFRANDataset(Dataset):
         self.images_path = images_path
         self.image_pairs = gen_fgnet_img_pairs_fran(images_path)
         if transform is None:
-            self.transform = transforms.Compose([
-                transforms.ConvertImageDtype(dtype=torch.float),
-                transforms.Resize((160, 160)),
-                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-            ])
+            self.transform = transforms.Compose(
+                [
+                    transforms.ConvertImageDtype(dtype=torch.float),
+                    transforms.Resize((160, 160)),
+                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+                ]
+            )
         else:
             self.transform = transform
 
@@ -132,18 +163,28 @@ class FGNETFRANDataset(Dataset):
 
     def __getitem__(self, index):
         image_pair = self.image_pairs[index]
-        input_image = read_image(os.path.join(self.images_path, image_pair[0]), mode=ImageReadMode.RGB)
-        target_image = read_image(os.path.join(self.images_path, image_pair[1]), mode=ImageReadMode.RGB)
+        input_image = read_image(
+            os.path.join(self.images_path, image_pair[0]), mode=ImageReadMode.RGB
+        )
+        target_image = read_image(
+            os.path.join(self.images_path, image_pair[1]), mode=ImageReadMode.RGB
+        )
 
         input_image = self.transform(input_image)
         target_image = self.transform(target_image)
 
         input_age = int(image_pair[0][4:6])
         target_age = int(image_pair[1][4:6])
-        age_tensor_input = torch.full((1, input_image.shape[1], input_image.shape[2]), input_age / 100)  # 1 x W x H
-        age_tensor_target = torch.full((1, target_image.shape[1], target_image.shape[2]), target_age / 100)  # 1 x W x H
+        age_tensor_input = torch.full(
+            (1, input_image.shape[1], input_image.shape[2]), input_age / 100
+        )  # 1 x W x H
+        age_tensor_target = torch.full(
+            (1, target_image.shape[1], target_image.shape[2]), target_age / 100
+        )  # 1 x W x H
 
-        tensor_input = torch.cat((input_image, age_tensor_input, age_tensor_target), dim=0)
+        tensor_input = torch.cat(
+            (input_image, age_tensor_input, age_tensor_target), dim=0
+        )
 
         return {
             "input": tensor_input,

@@ -2,6 +2,7 @@ import os
 
 from src.constants import FGNET_BASE_DIR, FGNET_INDIVIDUALS_DIR
 
+
 def main():
     id_to_gender = {}
     for file in os.listdir(FGNET_INDIVIDUALS_DIR):
@@ -17,6 +18,7 @@ def main():
         old_path = os.path.join(FGNET_BASE_DIR, file)
         new_path = os.path.join(FGNET_BASE_DIR, new_filename)
         os.rename(old_path, new_path)
+
 
 if __name__ == "__main__":
     main()

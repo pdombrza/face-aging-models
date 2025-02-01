@@ -1,8 +1,4 @@
-if __name__ == "__main__":
-    import sys
-    sys.path.append('../src')
-
-import os
+# Unused
 from PIL import Image
 import numpy as np
 import cv2
@@ -12,22 +8,26 @@ from torchvision import models, transforms
 from constants import SYNTHETIC_IMAGES_DIR
 
 
-model = models.segmentation.deeplabv3_resnet101(weights='DeepLabV3_ResNet101_Weights.DEFAULT')
+model = models.segmentation.deeplabv3_resnet101(
+    weights="DeepLabV3_ResNet101_Weights.DEFAULT"
+)
 model.eval()
 
 
 def preprocess_image(image_path):
     input_image = Image.open(image_path)
-    transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-    ])
+    transform = transforms.Compose(
+        [
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ]
+    )
     input_tensor = transform(input_image).unsqueeze(0)
     return input_tensor, input_image
 
 
 def preprocess_mask(output, input_image):
-    output = output['out'][0]
+    output = output["out"][0]
     output_predictions = output.argmax(0)
 
     person_class = 15
@@ -35,7 +35,9 @@ def preprocess_mask(output, input_image):
 
     mask = cv2.resize(mask, (input_image.width, input_image.height), interpolation=cv2.INTER_NEAREST)
     unique_values = np.unique(mask)
-    print(f"Mask unique values: {unique_values}")  # Should contain 0 and 255 if the person class is detected
+    print(
+        f"Mask unique values: {unique_values}"
+    )  # Should contain 0 and 255 if the person class is detected
 
     return mask
 
@@ -62,9 +64,8 @@ def main():
     mask = preprocess_mask(output, input_image)
     blurred_image = blur_background(image_path, mask)
     print(blurred_image)
-    status = cv2.imwrite('./seed0003.png', blurred_image)
+    status = cv2.imwrite("./seed0003.png", blurred_image)
     print(status)
-
 
 
 if __name__ == "__main__":
