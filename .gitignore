@@ -19,7 +19,7 @@ images
 removed.txt
 removed2.txt
 tb_logs
-models/
+*.pth
 
 fix_log.py
 get_plot_from_log.py
